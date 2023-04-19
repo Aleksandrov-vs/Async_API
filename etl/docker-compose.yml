@@ -1,0 +1,42 @@
+version: '3'
+services:
+  pg:
+    image: postgres:13
+    env_file:
+      - .env
+    volumes:
+      - pg_volume:/var/lib/postgresql/data
+      - ./dump:/docker-entrypoint-initdb.d
+
+  etl:
+    build: etl
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/opt/
+    depends_on:
+      - pg
+      - es
+
+  es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms2048m -Xmx2048m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_volume:/usr/share/elasticsearch/data
+
+volumes:
+  pg_volume:
+    driver_opts:
+      type: none
+      o: bind
+      device: $HOME/postgresql/data
+  es_volume:
+    driver_opts:
+      type: none
+      o: bind
+      device: $HOME/elasticsearch/data
