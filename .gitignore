@@ -138,3 +138,6 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+postgresql/data/*
+elasticsearch/data/*
+redis/data/*
