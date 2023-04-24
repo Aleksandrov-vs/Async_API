@@ -1,0 +1,113 @@
+version: '3'
+
+x-base: &base
+    env_file:
+        - .env
+
+
+networks:
+  API:
+    driver: bridge
+
+
+services:
+
+  redis:
+    image: redis
+    container_name: 'redis_cache'
+    restart: unless-stopped
+    networks:
+      - API
+    command:
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_volume:/data
+    expose:
+      - ${REDIS_PORT}
+
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  pg:
+    image: postgres:13
+    env_file:
+      - .env
+    networks:
+      - API
+    volumes:
+      - pg_volume:/var/lib/postgresql/data
+      - ./etl/dump:/docker-entrypoint-initdb.d
+    expose:
+      - ${POSTGRES_PORT}
+
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U app -d movies_database" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms2048m -Xmx2048m"
+    networks:
+      - API
+    ports:
+      - ${ELASTIC_PORT}:9200
+    volumes:
+      - es_volume:/usr/share/elasticsearch/data
+
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  fast_api:
+    build:
+      context: async_api
+    env_file:
+      - .env
+    networks:
+      - API
+
+  etl:
+    build: etl/etl
+    env_file:
+      - .env
+    networks:
+      - API
+    environment:
+      - PYTHONPATH=/opt/
+    depends_on:
+      pg:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      es:
+        condition: service_healthy
+
+
+volumes:
+  pg_volume:
+    driver_opts:
+      type: none
+      o: bind
+      device: ./postgresql/data
+
+  es_volume:
+    driver_opts:
+      type: none
+      o: bind
+      device: ./elasticsearch/data
+
+  redis_volume:
+    driver_opts:
+      type: none
+      o: bind
+      device: ./redis/data
