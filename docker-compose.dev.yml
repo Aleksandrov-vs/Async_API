@@ -84,6 +84,10 @@ services:
       context: etl/postgres_to_es
     env_file:
       - .env
+    networks:
+      - API
+    environment:
+      - PYTHONPATH=/opt/
     depends_on:
       pg:
         condition: service_healthy
