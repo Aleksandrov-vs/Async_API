@@ -1,4 +1,4 @@
-version: '3'
+Fversion: '3'
 
 x-base: &base
     env_file:
@@ -73,6 +73,9 @@ services:
       context: async_api
     env_file:
       - .env
+    ports:
+      - ${FAST_API_PORT}:${FAST_API_PORT}
+    command: uvicorn main:app --host ${FAST_API_HOST} --port ${FAST_API_PORT}
     networks:
       - API
 
