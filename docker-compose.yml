@@ -1,4 +1,4 @@
-Fversion: '3'
+version: '3'
 
 x-base: &base
     env_file:
