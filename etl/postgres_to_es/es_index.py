@@ -1,3 +1,4 @@
+INDEX_MOVIES = """
 {
   "settings": {
     "refresh_interval": "1s",
@@ -105,3 +106,4 @@
     }
   }
 }
+"""
