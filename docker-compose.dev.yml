@@ -75,7 +75,6 @@ services:
       - .env
     ports:
       - ${FAST_API_PORT}:${FAST_API_PORT}
-    command: uvicorn main:app --host ${FAST_API_HOST} --port ${FAST_API_PORT}
     networks:
       - API
 
