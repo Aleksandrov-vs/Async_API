@@ -73,6 +73,8 @@ services:
       context: async_api
     env_file:
       - .env
+    ports:
+      - ${FAST_API_PORT}:${FAST_API_PORT}
     networks:
       - API
 
