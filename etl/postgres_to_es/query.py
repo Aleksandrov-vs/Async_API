@@ -17,8 +17,10 @@ def get_movies_query(modified: Optional[str]) -> str:
         ) AS director,
         ARRAY_AGG(DISTINCT person.full_name) FILTER (WHERE person_film.role = 'actor') AS actors_names,
         ARRAY_AGG(DISTINCT person.full_name) FILTER (WHERE person_film.role = 'writer') AS writers_names,
-        ARRAY_AGG(DISTINCT jsonb_build_object('id', person.id, 'name', person.full_name)) FILTER (WHERE person_film.role = 'actor') AS actors,
-        ARRAY_AGG(DISTINCT jsonb_build_object('id', person.id, 'name', person.full_name)) FILTER (WHERE person_film.role = 'writer') AS writers,
+        ARRAY_AGG(DISTINCT jsonb_build_object('id', person.id, 'name', person.full_name)) 
+            FILTER (WHERE person_film.role = 'actor') AS actors,
+        ARRAY_AGG(DISTINCT jsonb_build_object('id', person.id, 'name', person.full_name)) 
+            FILTER (WHERE person_film.role = 'writer') AS writers,
         GREATEST(film.modified, MAX(person.modified), MAX(genre.modified)) AS modified
     FROM content.film_work film
         LEFT JOIN content.genre_film_work AS genre_film ON film.id = genre_film.film_work_id
