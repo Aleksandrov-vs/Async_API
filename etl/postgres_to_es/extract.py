@@ -1,21 +1,21 @@
-from typing import Optional, Iterator
-from dataclasses import asdict
 from contextlib import closing
+from dataclasses import asdict
+from typing import Optional, Iterator
 
 import psycopg2
-from psycopg2.extras import DictCursor
 from psycopg2.extensions import connection as pg_conn
+from psycopg2.extras import DictCursor
 
 from backoff_decorator import backoff
+from schema import ESMovies, ESPersons, ESGenres
 from settings import PostgresDSN
-from schema import ESMovies
 
 
 class PostgresExtractor:
     def __init__(
-        self,
-        dsn: PostgresDSN,
-        postgres_connection: Optional[pg_conn] = None,
+            self,
+            dsn: PostgresDSN,
+            postgres_connection: Optional[pg_conn] = None,
     ) -> None:
         self.dsn = dsn
         self.postgres_conn = postgres_connection
@@ -38,15 +38,13 @@ class PostgresExtractor:
         return psycopg2.connect(**self.dsn.dict(), cursor_factory=DictCursor)
 
     @backoff()
-    def extract_data(self, query: str, itersize: int) -> Iterator[dict]:
+    def extract_data(self, query: str, itersize: int, model: ESPersons | ESGenres | ESMovies) -> Iterator[dict]:
         """Выбирает пачку записей itersize и возвращает итератор данных."""
         with closing(self.postgres_connection) as conn:
             with conn.cursor() as cur:
                 cur.execute(query)
                 while user_chunk := cur.fetchmany(size=itersize):
                     for row in user_chunk:
-                        instance = asdict(ESMovies(**row))
-                        # Этот костыль нужен, чтобы id в ES и PG совпадали,
-                        # иначе записи в ES дублируются.
+                        instance = asdict(model(**row))
                         instance['_id'] = instance['id']
                         yield instance

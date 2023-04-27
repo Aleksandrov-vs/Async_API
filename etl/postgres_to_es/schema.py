@@ -24,3 +24,25 @@ class ESMovies:
     actors: list[PersonInFilm] | None
     writers: list[PersonInFilm] | None
     modified: str | None
+
+
+@dataclass
+class FilmsInPersons:
+    id: uuid.UUID
+    title: str | None
+    roles: list[str]
+
+
+@dataclass
+class ESPersons:
+    id: uuid.UUID
+    full_name: str | None
+    films: list[FilmsInPersons] | None
+    modified: str | None
+
+
+@dataclass
+class ESGenres:
+    id: uuid.UUID
+    name: str | None
+    modified: str | None
