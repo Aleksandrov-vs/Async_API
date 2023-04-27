@@ -5,6 +5,7 @@ from datetime import datetime, MINYEAR, timezone
 from redis import Redis
 
 from extract import PostgresExtractor
+from es_index import INDEX_MOVIES, INDEX_GENRES, INDEX_PERSONS
 from load import ElasticLoader
 from query import get_query
 from schema import ESMovies, ESPersons, ESGenres
@@ -30,13 +31,13 @@ persons_loader = ElasticLoader(config=elastic_config, state=state, index=persons
 genres_loader = ElasticLoader(config=elastic_config, state=state, index=movies_index, state_key='genres_modified')
 
 loaders = {
-    movies_loader: ('movies', ESMovies),
-    persons_loader: ('persons', ESPersons),
-    genres_loader: ('genres', ESGenres)
+    movies_loader: ('movies', ESMovies, INDEX_MOVIES),
+    persons_loader: ('persons', ESPersons, INDEX_PERSONS),
+    genres_loader: ('genres', ESGenres, INDEX_GENRES)
 }
 
 for loader in loaders:
-    loader.create_index_if_not_exists()
+    loader.create_index_if_not_exists(loaders[loader][2])
 
 
 def etl(query: str, loader: ElasticLoader) -> None:
