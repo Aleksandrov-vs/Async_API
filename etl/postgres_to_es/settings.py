@@ -1,8 +1,7 @@
 import logging
 
-from pydantic import BaseSettings, Field
 from dotenv import load_dotenv
-
+from pydantic import BaseSettings, Field
 
 load_dotenv()
 
@@ -30,7 +29,9 @@ class RedisConfig(BaseSettings):
 class AppConfig(BaseSettings):
     batch_size: int = Field(env='BATCH_SIZE')
     frequency: int = Field(env='FREQUENCY')
-    elastic_index: str = Field(env='ELASTICSEARCH_INDEX')
+    movies_index: str = Field(env='MOVIES_INDEX')
+    persons_index: str = Field(env='PERSONS_INDEX')
+    genres_index: str = Field(env='GENRES_INDEX')
 
 
 postgres_dsn = PostgresDSN()
