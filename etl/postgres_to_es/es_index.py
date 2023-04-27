@@ -231,12 +231,7 @@ INDEX_GENRES = {
             },
             "name": {
                 "type": "text",
-                "analyzer": "ru_en",
-                "fields": {
-                    "raw": {
-                        "type": "keyword"
-                    }
-                }
+                "analyzer": "ru_en"
             }
         }
     }

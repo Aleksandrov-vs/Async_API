@@ -28,7 +28,7 @@ state = State(config=redis_config, redis_conn=Redis)
 postgres_extractor = PostgresExtractor(dsn=postgres_dsn)
 movies_loader = ElasticLoader(config=elastic_config, state=state, index=movies_index, state_key='movies_modified')
 persons_loader = ElasticLoader(config=elastic_config, state=state, index=persons_index, state_key='persons_modified')
-genres_loader = ElasticLoader(config=elastic_config, state=state, index=movies_index, state_key='genres_modified')
+genres_loader = ElasticLoader(config=elastic_config, state=state, index=genres_index, state_key='genres_modified')
 
 loaders = {
     movies_loader: ('movies', ESMovies, INDEX_MOVIES),
