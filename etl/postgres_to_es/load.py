@@ -1,29 +1,29 @@
-import time
 import logging
+import time
 from typing import List, Iterator, Tuple, Optional
 
 import elasticsearch
 from elasticsearch import Elasticsearch, helpers
 
 from backoff_decorator import backoff
+from schema import ESMovies, ESPersons, ESGenres
 from settings import ElasticConfig
 from state import State
-from schema import ESMovies
-from es_index import INDEX_MOVIES
-
 
 logger = logging.getLogger(__name__)
 
 
 class ElasticLoader:
     def __init__(
-        self,
-        state: State,
-        config: ElasticConfig,
-        index: str,
-        elastic_conn: Optional[Elasticsearch] = None,
+            self,
+            state: State,
+            state_key: str,
+            config: ElasticConfig,
+            index: str,
+            elastic_conn: Optional[Elasticsearch] = None,
     ) -> None:
         self.state = state
+        self.state_key = state_key
         self.config = config
         self.index = index
         self.elastic_conn = elastic_conn
@@ -46,23 +46,20 @@ class ElasticLoader:
             host=self.config.host,
             port=self.config.port,
             scheme=self.config.scheme
-            )
+        )
 
     @backoff(start_sleep_time=0.5)
-    def create_index_if_not_exists(self) -> None:
+    def create_index_if_not_exists(self, index_code) -> None:
         """Создаёт индекс, если его не существовало."""
-        try:
-            self.elastic_connection.indices.create(
-                index=self.index,
-                body=INDEX_MOVIES
-            )
-        except elasticsearch.exceptions.RequestError as er:
-            if er.error == 'resource_already_exists_exception':
-                pass
+        self.elastic_connection.indices.create(
+            index=self.index,
+            body=index_code,
+            ignore=400
+        )
 
     @backoff(start_sleep_time=0.5)
     def generate_docs(
-        self, docs: Iterator[List[ESMovies]]
+            self, docs: Iterator[List[ESMovies | ESPersons | ESGenres]]
     ) -> Iterator[Tuple[dict, str]]:
         """
         Возвращает итератор документов для ES.
@@ -73,12 +70,11 @@ class ElasticLoader:
             modified = doc.pop('modified')
             yield doc
 
-        # Записываем в стейт только если у нас были какие-то записи
         if modified:
-            self.state.set_state('modified', str(modified))
+            self.state.set_state(self.state_key, str(modified))
 
     @backoff(start_sleep_time=0.5)
-    def bulk_update(self, docs: Iterator[dict], itersize: int,) -> None:
+    def bulk_update(self, docs: Iterator[dict], itersize: int, ) -> None:
         """Загружает данные в ES используя итератор"""
         t = time.perf_counter()
 
