@@ -40,7 +40,7 @@ def get_persons_query(modified: Optional[str]) -> str:
     SELECT
     person.id,
     person.full_name,
-    ARRAY_AGG(jsonb_build_object('uuid', films.id, 'title', films.title, 'roles', films.roles)) AS films,
+    ARRAY_AGG(jsonb_build_object('id', films.id, 'title', films.title, 'roles', films.roles)) AS films,
     GREATEST(MAX(films.modified), MAX(person.modified)) as modified
     FROM content.person person
     LEFT JOIN (

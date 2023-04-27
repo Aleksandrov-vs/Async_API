@@ -26,7 +26,9 @@ class ESMovies:
     modified: str | None
 
 
-class FilmsInPersons(UUIDModel):
+@dataclass
+class FilmsInPersons:
+    id: uuid.UUID
     title: str | None
     roles: list[str]
 
