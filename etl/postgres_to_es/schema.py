@@ -36,9 +36,11 @@ class ESPersons:
     id: uuid.UUID
     full_name: str | None
     films: list[FilmsInPersons] | None
+    modified: str | None
 
 
 @dataclass
 class ESGenres:
     id: uuid.UUID
     name: str | None
+    modified: str | None
