@@ -34,16 +34,21 @@ class FilmService:
 
     async def get_by_sort(self, sort: str, page_size: int,
                           page_number: int, genre: UUID | None):
-        films = await self._film_by_sort_from_cache(sort, page_size,
-                                                    page_number, genre)
+        films = await self._film_by_sort_from_cache(
+            sort, page_size,
+            page_number, genre
+        )
         if not films:
-            films = await self._get_films_by_sort_from_elastic(sort, page_size,
-                                                               page_number, genre)
+            films = await self._get_films_by_sort_from_elastic(
+                sort, page_size,
+                page_number, genre
+            )
             if not films:
                 return None
-            await self._put_sort_films_to_cache(sort, page_size,
-                                                page_number,
-                                                genre)
+            await self._put_sort_films_to_cache(
+                sort, page_size,
+                page_number, genre
+            )
             return films
 
     async def get_by_query(self, query, page_size, page_number):
@@ -64,7 +69,6 @@ class FilmService:
             doc = await self.elastic.search(
                 index='movies',
                 body={
-
                     "query": {
                         "match": {
                             "title": {
@@ -100,20 +104,24 @@ class FilmService:
         return film
 
     async def _get_films_by_sort_from_elastic(self, sort: str, page_size: int,
-                                              page_number: int, genre: UUID | None) -> Optional[List[ShortFilm]]:
+                                              page_number: int, genre_id: UUID | None) -> Optional[List[ShortFilm]]:
         if sort.startswith('-'):
             type_sort = 'desc'
             sort_value = sort[1:]
         else:
             type_sort = 'asc'
             sort_value = sort
-
+        genre_inf = await self.elastic.get('genres', genre_id)
+        genre_name = genre_inf['_source']['name']
+        print(genre_name)
         try:
             doc = await self.elastic.search(
                 index='movies',
                 body={
                     'query': {
-                        'match_all': {}
+                        'match': {
+                            'genre': genre_name
+                        }
                     },
                     'sort': [{sort_value: type_sort}]
                 },
