@@ -27,15 +27,11 @@ class Writer(Actor):
     pass
 
 
-#НАДО ИСПРАВИТЬ (можно просто наследоваться от UUIDMixin), сейчас нет индексов жанров и персон
-class Director(BaseOrjsonModel):
-    uuid: UUID = Field(default=uuid.uuid4)
+class Director(UUIDMixin):
     full_name: str
 
 
-#НАДО ИСПРАВИТЬ (можно просто наследоваться от UUIDMixin),, сейчас нет индексов жанров и персон
-class Genre(BaseOrjsonModel):
-    uuid: UUID = Field(default=uuid.uuid4)
+class Genre(UUIDMixin):
     name: str
 
 
