@@ -1,5 +1,3 @@
-import uuid
-
 import orjson
 from pydantic import BaseModel
 
