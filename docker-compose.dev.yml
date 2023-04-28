@@ -49,8 +49,9 @@ services:
       timeout: 5s
       retries: 5
 
-  es:
+  elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+#    command: sh -c "apt install curl && /usr/local/bin/docker-entrypoint.sh"
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
@@ -58,7 +59,7 @@ services:
     networks:
       - API
     ports:
-      - ${ELASTIC_PORT}:9200
+      - ${ELASTICSEARCH_PORT}:9200
     volumes:
       - es_volume:/usr/share/elasticsearch/data
 
@@ -79,19 +80,16 @@ services:
       - API
 
   etl:
-    build: etl/etl
+    build:
+      context: etl/postgres_to_es
     env_file:
       - .env
-    networks:
-      - API
-    environment:
-      - PYTHONPATH=/opt/
     depends_on:
       pg:
         condition: service_healthy
       redis:
         condition: service_healthy
-      es:
+      elasticsearch:
         condition: service_healthy
 
 
