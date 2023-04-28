@@ -1,4 +1,4 @@
-Fversion: '3'
+version: '3'
 
 x-base: &base
     env_file:
@@ -21,15 +21,9 @@ services:
     command:
       --requirepass ${REDIS_PASSWORD}
     volumes:
-      - redis_volume:/data
-    expose:
-      - ${REDIS_PORT}
-
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - ./redis/data:/data
+    ports:
+      - ${REDIS_PORT}:6379
 
   pg:
     image: postgres:13
@@ -38,19 +32,13 @@ services:
     networks:
       - API
     volumes:
-      - pg_volume:/var/lib/postgresql/data
+      - ./postgresql/data:/var/lib/postgresql/data
       - ./etl/dump:/docker-entrypoint-initdb.d
-    expose:
-      - ${POSTGRES_PORT}
+    ports:
+      - ${POSTGRES_PORT}:5432
 
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U app -d movies_database" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  es:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+  elasticsearch:
+    image: 'ghcr.io/yp-middle-python-24/elasticsearch:8.7.0'
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
@@ -58,15 +46,9 @@ services:
     networks:
       - API
     ports:
-      - ${ELASTIC_PORT}:9200
+      - ${ELASTICSEARCH_PORT}:9200
     volumes:
-      - es_volume:/usr/share/elasticsearch/data
-
-    healthcheck:
-      test: [ "CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      - ./elasticsearch/data:/usr/share/elasticsearch/data
 
   fast_api:
     build:
@@ -75,42 +57,11 @@ services:
       - .env
     ports:
       - ${FAST_API_PORT}:${FAST_API_PORT}
-    command: uvicorn main:app --host ${FAST_API_HOST} --port ${FAST_API_PORT}
     networks:
       - API
 
   etl:
-    build: etl/etl
+    build:
+      context: etl/postgres_to_es
     env_file:
       - .env
-    networks:
-      - API
-    environment:
-      - PYTHONPATH=/opt/
-    depends_on:
-      pg:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      es:
-        condition: service_healthy
-
-
-volumes:
-  pg_volume:
-    driver_opts:
-      type: none
-      o: bind
-      device: ./postgresql/data
-
-  es_volume:
-    driver_opts:
-      type: none
-      o: bind
-      device: ./elasticsearch/data
-
-  redis_volume:
-    driver_opts:
-      type: none
-      o: bind
-      device: ./redis/data
