@@ -1,17 +1,13 @@
-import uuid
+from typing import List
 from uuid import UUID
-import orjson
 
-from typing import List, Tuple, Dict
-# Используем pydantic для упрощения работы при перегонке данных из json в объекты
-from pydantic import Field
+import orjson
 
 from db.models.elastic_models import SerializedFilm
 from .base import BaseOrjsonModel
 
 
 def orjson_dumps(v, *, default):
-    # orjson.dumps возвращает bytes, а pydantic требует unicode, поэтому декодируем
     return orjson.dumps(v, default=default).decode()
 
 
@@ -57,9 +53,17 @@ class DetailFilm(ShortFilm):
 
     @classmethod
     def from_serialized_movie(cls, serialized_movie: SerializedFilm):
-        actors = [Actor(uuid=actor.get('id'), full_name=actor.get('name')) for actor in serialized_movie.actors]
-        writers = [Writer(uuid=writer.get('id'), full_name=writer.get('name')) for writer in serialized_movie.writers]
-        directors = [Director(full_name=director[0]) for director in serialized_movie.director]
+        actors = [
+            Actor(uuid=actor.get('id'), full_name=actor.get('name'))
+            for actor in serialized_movie.actors]
+        writers = [
+            Writer(uuid=writer.get('id'), full_name=writer.get('name'))
+            for writer in serialized_movie.writers
+        ]
+        directors = [
+            Director(full_name=director[0])
+            for director in serialized_movie.director
+        ]
         genre = [Genre(name=g) for g in serialized_movie.genre]
         return cls(
             uuid=serialized_movie.id,
