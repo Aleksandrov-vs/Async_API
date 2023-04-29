@@ -19,7 +19,7 @@ services:
     networks:
       - API
     volumes:
-      - redis_volume:/data
+      - ./redis/data:/data
     ports:
       - ${REDIS_PORT}:6379
 
@@ -38,7 +38,7 @@ services:
     networks:
       - API
     volumes:
-      - pg_volume:/var/lib/postgresql/data
+      - ./postgresql/data:/var/lib/postgresql/data
       - ./etl/dump:/docker-entrypoint-initdb.d
     ports:
       - ${POSTGRES_PORT}:5432
@@ -59,7 +59,7 @@ services:
     ports:
       - ${ELASTICSEARCH_PORT}:9200
     volumes:
-      - es_volume:/usr/share/elasticsearch/data
+      - ./elasticsearch/data:/usr/share/elasticsearch/data
 
     healthcheck:
       test: [ "CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1" ]
@@ -93,23 +93,3 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
-
-
-volumes:
-  pg_volume:
-    driver_opts:
-      type: none
-      o: bind
-      device: ./postgresql/data
-
-  es_volume:
-    driver_opts:
-      type: none
-      o: bind
-      device: ./elasticsearch/data
-
-  redis_volume:
-    driver_opts:
-      type: none
-      o: bind
-      device: ./redis/data
