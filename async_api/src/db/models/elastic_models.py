@@ -1,17 +1,27 @@
 from typing import Dict, List
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class Person(BaseModel):
+    id: UUID
+    name: str
+
+
+class Genre(BaseModel):
+    id: UUID
+    name: str
 
 
 class SerializedFilm(BaseModel):
     id: UUID
     imdb_rating: float
-    genre: List[str]
+    genre: List[Genre]
     title: str
     description: str
-    director: List[str]
+    director: List[Person]
     actors_names: List[str]
     writers_names: List[str]
-    actors: List[Dict]
-    writers: List[Dict]
+    actors: List[Person]
+    writers: List[Person]

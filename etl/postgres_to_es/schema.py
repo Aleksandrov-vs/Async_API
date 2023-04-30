@@ -18,7 +18,7 @@ class ESMovies:
     genre: list[str] | None
     title: str | None
     description: str | None
-    director: list[str] | None
+    director: list[PersonInFilm] | None
     actors_names: list[str] | None
     writers_names: list[str] | None
     actors: list[PersonInFilm] | None

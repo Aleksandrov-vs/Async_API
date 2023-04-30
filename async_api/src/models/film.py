@@ -23,8 +23,8 @@ class Writer(Actor):
     pass
 
 
-class Director(UUIDMixin):
-    full_name: str
+class Director(Actor):
+    pass
 
 
 class Genre(UUIDMixin):
@@ -53,18 +53,23 @@ class DetailFilm(ShortFilm):
 
     @classmethod
     def from_serialized_movie(cls, serialized_movie: SerializedFilm):
+        print(serialized_movie.genre)
         actors = [
-            Actor(uuid=actor.get('id'), full_name=actor.get('name'))
+            Actor(uuid=actor.id, full_name=actor.name)
             for actor in serialized_movie.actors]
         writers = [
-            Writer(uuid=writer.get('id'), full_name=writer.get('name'))
+            Writer(uuid=writer.id, full_name=writer.name)
             for writer in serialized_movie.writers
         ]
         directors = [
-            Director(full_name=director[0])
+            Director(uuid=director.id, full_name=director.name)
             for director in serialized_movie.director
         ]
-        genre = [Genre(name=g) for g in serialized_movie.genre]
+        print(serialized_movie.genre)
+        genre = [
+            Genre(uuid=g.id, name=g.name)
+            for g in serialized_movie.genre
+        ]
         return cls(
             uuid=serialized_movie.id,
             title=serialized_movie.title,

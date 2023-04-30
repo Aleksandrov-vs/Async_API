@@ -76,6 +76,11 @@ services:
       - ${FAST_API_PORT}:${FAST_API_PORT}
     networks:
       - API
+    depends_on:
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
 
   etl:
     build:

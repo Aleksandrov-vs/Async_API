@@ -10,15 +10,25 @@ from services.film import FilmService, get_film_service
 router = APIRouter()
 
 
+class Person(BaseModel):
+    uuid: UUID
+    full_name: str
+
+
+class Genre(BaseModel):
+    uuid: UUID
+    name: str
+
+
 class Film(BaseModel):
     uuid: UUID
     title: str
     imdb_rating: float
     description: str
-    actors: List
-    writers: List
-    directors: List
-    genre: List
+    actors: List[Person]
+    writers:  List[Person]
+    directors:  List[Person]
+    genre: List[Genre]
 
 
 class FilmSearch(BaseModel):
@@ -29,7 +39,7 @@ class FilmSearch(BaseModel):
 
 @router.get('/search', response_model=List[FilmSearch])
 async def film_search(
-        query: str,
+        film_title: str,
         page_size: int = Query(
             50, gt=0, le=100,
             description="Количество записей на странице (от 1 до 100)."
@@ -40,7 +50,7 @@ async def film_search(
         film_service: FilmService = Depends(get_film_service)
 ) -> List[FilmSearch]:
 
-    films = await film_service.get_by_query(query, page_size, page_number)
+    films = await film_service.get_by_query(film_title, page_size, page_number)
     if not films:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
                             detail='films not found')
