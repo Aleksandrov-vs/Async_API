@@ -12,9 +12,8 @@ def get_movies_query(modified: Optional[str]) -> str:
         film.title,
         film.description,
         ARRAY_AGG(DISTINCT genre.name) AS genre,
-        COALESCE(
-            json_agg(DISTINCT person.full_name) FILTER (WHERE person_film.role = 'director'), '[]'
-        ) AS director,
+        ARRAY_AGG(DISTINCT jsonb_build_object('id', person.id, 'name', person.full_name))
+            FILTER (WHERE person_film.role = 'director') AS director,
         ARRAY_AGG(DISTINCT person.full_name) FILTER (WHERE person_film.role = 'actor') AS actors_names,
         ARRAY_AGG(DISTINCT person.full_name) FILTER (WHERE person_film.role = 'writer') AS writers_names,
         ARRAY_AGG(DISTINCT jsonb_build_object('id', person.id, 'name', person.full_name))

@@ -18,10 +18,8 @@ services:
     restart: unless-stopped
     networks:
       - API
-    command:
-      --requirepass ${REDIS_PASSWORD}
     volumes:
-      - redis_volume:/data
+      - ./redis/data:/data
     expose:
       - ${REDIS_PORT}
 
@@ -33,12 +31,14 @@ services:
 
   pg:
     image: postgres:13
-    env_file:
-      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     networks:
       - API
     volumes:
-      - pg_volume:/var/lib/postgresql/data
+      - ./postgresql/data:/var/lib/postgresql/data
       - ./etl/dump:/docker-entrypoint-initdb.d
     expose:
       - ${POSTGRES_PORT}
@@ -49,18 +49,17 @@ services:
       timeout: 5s
       retries: 5
 
-  es:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
     environment:
-      discovery.type: single-node
-      xpack.security.enabled: "false"
-      ES_JAVA_OPTS: "-Xms2048m -Xmx2048m"
+      - discovery.type=single-node
+      - xpack.security.enabled=false
     networks:
       - API
-    ports:
-      - ${ELASTIC_PORT}:9200
+    expose:
+      - ${ELASTICSEARCH_PORT}
     volumes:
-      - es_volume:/usr/share/elasticsearch/data
+      - ./elasticsearch/data:/usr/share/elasticsearch/data
 
     healthcheck:
       test: [ "CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1" ]
@@ -75,12 +74,17 @@ services:
       - .env
     ports:
       - ${FAST_API_PORT}:${FAST_API_PORT}
-    command: uvicorn main:app --host ${FAST_API_HOST} --port ${FAST_API_PORT}
     networks:
       - API
+    depends_on:
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
 
   etl:
-    build: etl/etl
+    build:
+      context: etl/postgres_to_es
     env_file:
       - .env
     networks:
@@ -92,25 +96,5 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      es:
+      elasticsearch:
         condition: service_healthy
-
-
-volumes:
-  pg_volume:
-    driver_opts:
-      type: none
-      o: bind
-      device: ./postgresql/data
-
-  es_volume:
-    driver_opts:
-      type: none
-      o: bind
-      device: ./elasticsearch/data
-
-  redis_volume:
-    driver_opts:
-      type: none
-      o: bind
-      device: ./redis/data
