@@ -19,7 +19,7 @@ class SerializedFilm(BaseModel):
     imdb_rating: float
     genre: List[Genre]
     title: str
-    description: str
+    description: str | None
     director: List[Person]
     actors_names: List[str]
     writers_names: List[str]
