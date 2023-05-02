@@ -45,7 +45,7 @@ class ShortFilm(UUIDMixin):
 
 
 class DetailFilm(ShortFilm):
-    description: str
+    description: str | None
     actors: List[Actor]
     writers: List[Writer]
     directors: List[Director]
