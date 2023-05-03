@@ -2,14 +2,17 @@ from functools import lru_cache
 from typing import List, Optional
 from uuid import UUID
 
-from elasticsearch import AsyncElasticsearch, NotFoundError
-from fastapi import Depends
-from redis.asyncio import Redis
-
+import orjson
 from db.elastic import get_elastic
 from db.models.elastic_models import SerializedPerson, SerializedPersonFilm
 from db.redis import get_redis
+from elasticsearch import AsyncElasticsearch, NotFoundError
+from fastapi import Depends
 from models.person import Person, PersonFilms
+from redis.asyncio import Redis
+from services.redis_utils import key_generate
+
+PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
 class PersonService:
@@ -44,15 +47,12 @@ class PersonService:
             self, person_name: str,
             page_size: int, page_number: int
     ) -> Optional[List[Person]]:
-        persons = await self._search_person_from_cache(person_name)
-        if not persons:
-            ser_persons = await self._search_person_from_elastic(person_name,
-                                                                 page_size,
-                                                                 page_number)
-            if not ser_persons:
-                return None
-            persons = [Person.from_serialized_genre(p) for p in ser_persons]
-            await self._put_person_to_cache(persons)
+        ser_persons = await self._search_person_from_elastic(person_name,
+                                                             page_size,
+                                                             page_number)
+        if not ser_persons:
+            return None
+        persons = [Person.from_serialized_genre(p) for p in ser_persons]
         return persons
 
     async def _get_person_from_elastic(
@@ -112,20 +112,30 @@ class PersonService:
             for doc in doc['hits']['hits']
         ]
 
-    async def _put_person_to_cache(self, person):
-        return None
+    async def _put_person_to_cache(self, person: Person):
+        key = await key_generate(person.uuid)
+        await self.redis.set(key, person.json(),
+                             PERSON_CACHE_EXPIRE_IN_SECONDS)
 
-    async def _person_from_cache(self, person_id: UUID):
-        return None
+    async def _person_from_cache(self, person_id: UUID) -> Optional[Person]:
+        key = await key_generate(person_id)
+        data = await self.redis.get(key)
+        if not data:
+            return None
+        person = Person.parse_raw(data)
+        return person
 
-    async def _person_films_from_cache(self, person_id):
-        return None
+    async def _person_films_from_cache(self, person_id: UUID) -> Optional[PersonFilms]:
+        key = await key_generate(person_id, source='person_films')
+        data = await self.redis.get(key)
+        if not data:
+            return None
+        return [PersonFilms.parse_raw(item) for item in orjson.loads(data)]
 
-    async def _put_person_films_to_cache(self, person_id, films):
-        pass
-
-    async def _search_person_from_cache(self, person_name):
-        return None
+    async def _put_person_films_to_cache(self, person_id: UUID, person_films: List[PersonFilms]) -> None:
+        key = await key_generate(person_id, source='person_films')
+        await self.redis.set(key, orjson.dumps([person_film.json(by_alias=True) for person_film in person_films]),
+                             PERSON_CACHE_EXPIRE_IN_SECONDS)
 
 
 @lru_cache()
