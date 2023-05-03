@@ -27,7 +27,6 @@ class FilmService:
             if not film:
                 return None
             await self._put_film_to_cache(film)
-
         return film
 
     async def get_by_sort(
@@ -44,7 +43,7 @@ class FilmService:
             if not films:
                 return None
             await self._put_sort_films_to_cache(films, sort, page_size, page_number, genre)
-            return films
+        return films
 
     async def get_by_query(self, query, page_size, page_number):
         films = await self._get_films_by_query_from_elastic(
@@ -143,19 +142,21 @@ class FilmService:
         return films
 
     async def _film_from_cache(self, film_id: str) -> Optional[DetailFilm]:
-        data = await self.redis.get(film_id)
+        key = await key_generate(film_id)
+        data = await self.redis.get(key)
         if not data:
             return None
         film = DetailFilm.parse_raw(data)
         return film
 
     async def _put_film_to_cache(self, film: DetailFilm) -> None:
-        await self.redis.set(film.id, film.json(),
+        key = await key_generate(film.uuid)
+        await self.redis.set(key, film.json(),
                              FILM_CACHE_EXPIRE_IN_SECONDS)
 
     async def _film_by_sort_from_cache(self, sort: str, page_size: int,
                                        page_number: int, genre: UUID | None):
-        key = key_generate(sort, page_size, page_number, genre)
+        key = await key_generate(sort, page_size, page_number, genre)
         data = await self.redis.get(key)
         if not data:
             return None
@@ -163,7 +164,7 @@ class FilmService:
 
     async def _put_sort_films_to_cache(self, films: List[ShortFilm], sort: str, page_size: int,
                                        page_number: int, genre: UUID | None) -> None:
-        key = key_generate(sort, page_size, page_number, genre)
+        key = await key_generate(sort, page_size, page_number, genre)
         await self.redis.set(key, orjson.dumps([film.json(by_alias=True) for film in films]),
                              FILM_CACHE_EXPIRE_IN_SECONDS)
 
