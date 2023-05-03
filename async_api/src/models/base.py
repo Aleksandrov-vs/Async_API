@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import orjson
 from pydantic import BaseModel
 
@@ -10,3 +12,7 @@ class BaseOrjsonModel(BaseModel):
     class Config:
         json_loads = orjson.loads
         json_dumps = orjson_dumps
+
+
+class UUIDMixin(BaseOrjsonModel):
+    uuid: UUID

@@ -1,5 +1,4 @@
 from functools import lru_cache
-from pprint import pprint
 from typing import List, Optional
 from uuid import UUID
 
@@ -84,7 +83,6 @@ class FilmService:
             )
         except NotFoundError:
             return None
-        pprint(doc['hits']['hits'])
         films = list(map(
             lambda fl: ShortFilm(
                 uuid=fl['_source']['id'],
@@ -113,7 +111,6 @@ class FilmService:
             genre_id = res['hits']['hits'][0]['_source']['id']
             genres.append({'id': genre_id, 'name': genre_name})
         doc['_source']['genre'] = genres
-        pprint(doc['_source'])
         ser_film = elastic_models.SerializedFilm(**doc['_source'])
         film = DetailFilm.from_serialized_movie(ser_film)
         return film
