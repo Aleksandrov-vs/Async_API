@@ -49,7 +49,7 @@ class GenreService:
         ]
         return all_genres
 
-    async def _genre_from_cache(self, genre_id: str) -> Optional[Genre]:
+    async def _genre_from_cache(self, genre_id: UUID) -> Optional[Genre]:
         key = await key_generate(genre_id)
         data = await self.redis.get(key)
         if not data:
