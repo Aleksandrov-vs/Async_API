@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 from typing import List, Optional
 from uuid import UUID
@@ -25,6 +26,7 @@ class FilmService:
         if not film:
             film = await self._get_film_from_elastic(film_id)
             if not film:
+                logging.info(f'Film {film_id} is not found.')
                 return None
             await self._put_film_to_cache(film)
         return film
@@ -41,6 +43,7 @@ class FilmService:
         if not films:
             films = await self._get_films_by_sort_from_elastic(sort, page_size, page_number, genre)
             if not films:
+                logging.info(f'Films with filter {sort} is not found.')
                 return None
             await self._put_sort_films_to_cache(films, sort, page_size, page_number, genre)
         return films
@@ -51,6 +54,7 @@ class FilmService:
             page_number
         )
         if not films:
+            logging.info(f'Films with query {query} is not found.')
             return None
         return films
 
@@ -69,6 +73,7 @@ class FilmService:
                 size=page_size
             )
         except NotFoundError:
+            logging.error(f'Elastic not found error!')
             return None
         films = list(map(
             lambda fl: ShortFilm(
@@ -87,6 +92,7 @@ class FilmService:
         try:
             doc = await self.elastic.get('movies', film_id)
         except NotFoundError:
+            logging.error(f'Elastic not found error!')
             return None
 
         genres = []
@@ -106,7 +112,6 @@ class FilmService:
             self, sort: str, page_size: int,
             page_number: int, genre_id: UUID | None
     ) -> Optional[List[ShortFilm]]:
-
         if sort.startswith('-'):
             type_sort = 'desc'
             sort_value = sort[1:]
@@ -115,7 +120,6 @@ class FilmService:
             sort_value = sort
 
         try:
-
             if genre_id:
                 genre_inf = await self.elastic.get('genres', genre_id)
                 genre_name = genre_inf['_source']['name']
@@ -130,6 +134,7 @@ class FilmService:
                 size=page_size
             )
         except NotFoundError:
+            logging.error(f'Elastic not found error!')
             return None
         films = list(map(
             lambda fl: ShortFilm(
@@ -145,6 +150,7 @@ class FilmService:
         key = await key_generate(film_id)
         data = await self.redis.get(key)
         if not data:
+            logging.error(f'Cache is empty...')
             return None
         film = DetailFilm.parse_raw(data)
         return film
@@ -159,6 +165,7 @@ class FilmService:
         key = await key_generate(sort, page_size, page_number, genre)
         data = await self.redis.get(key)
         if not data:
+            logging.error(f'Cache is empty...')
             return None
         return [ShortFilm.parse_raw(item) for item in orjson.loads(data)]
 

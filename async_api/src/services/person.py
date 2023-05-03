@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 from typing import List, Optional
 from uuid import UUID
@@ -25,6 +26,7 @@ class PersonService:
         if not person:
             ser_person = await self._get_person_from_elastic(person_id)
             if not ser_person:
+                logging.info(f'Person {person_id} is not found!')
                 return None
             person = Person.from_serialized_genre(ser_person)
             await self._put_person_to_cache(person)
@@ -35,6 +37,7 @@ class PersonService:
         if not persons_film:
             ser_films = await self._get_person_films_from_elastic(person_id)
             if not ser_films:
+                logging.info(f'Person {person_id} is not found!')
                 return None
             persons_film = [
                 PersonFilms.from_serialized_genre(film)
@@ -51,6 +54,7 @@ class PersonService:
                                                              page_size,
                                                              page_number)
         if not ser_persons:
+            logging.info('Person is not found!')
             return None
         persons = [Person.from_serialized_genre(p) for p in ser_persons]
         return persons
@@ -61,6 +65,7 @@ class PersonService:
         try:
             doc = await self.elastic.get('persons', person_id)
         except NotFoundError:
+            logging.error(f'Elastic not found error!')
             return None
         return SerializedPerson(**doc['_source'])
 
@@ -69,6 +74,7 @@ class PersonService:
     ) -> Optional[List[SerializedPersonFilm]]:
         person_inf = await self._get_person_from_elastic(person_id)
         if person_inf is None:
+            logging.error(f'Elastic not found error!')
             return None
         person_films_id = [f.id for f in person_inf.films]
         body = {
@@ -106,6 +112,7 @@ class PersonService:
                 size=page_size
             )
         except NotFoundError:
+            logging.error(f'Elastic not found error!')
             return None
         return [
             SerializedPerson(**doc['_source'])
@@ -121,6 +128,7 @@ class PersonService:
         key = await key_generate(person_id)
         data = await self.redis.get(key)
         if not data:
+            logging.error(f'Cache is empty...')
             return None
         person = Person.parse_raw(data)
         return person
@@ -129,6 +137,7 @@ class PersonService:
         key = await key_generate(person_id, source='person_films')
         data = await self.redis.get(key)
         if not data:
+            logging.error(f'Cache is empty...')
             return None
         return [PersonFilms.parse_raw(item) for item in orjson.loads(data)]
 

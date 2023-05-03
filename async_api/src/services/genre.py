@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 from typing import List, Optional
 from uuid import UUID
@@ -26,6 +27,7 @@ class GenreService:
             ser_genre = await self._get_genres_from_elastic()
             genres = [Genre.from_serialized_genre(s_g) for s_g in ser_genre]
             if not genres:
+                logging.info('Genres is not found!')
                 return None
             await self._put_genres_to_cache(genres)
         return genres
@@ -35,6 +37,7 @@ class GenreService:
         if not genre:
             ser_genre = await self._get_genre_from_elastic(genre_id)
             if not ser_genre:
+                logging.info('Genres is not found!')
                 return None
             genre = Genre.from_serialized_genre(ser_genre)
             await self._put_genre_to_cache(genre)
@@ -53,6 +56,7 @@ class GenreService:
         key = await key_generate(genre_id)
         data = await self.redis.get(key)
         if not data:
+            logging.error(f'Cache is empty...')
             return None
         genre = Genre.parse_raw(data)
         return genre
@@ -61,6 +65,7 @@ class GenreService:
         key = await key_generate(source='all_genres')
         data = await self.redis.get(key)
         if not data:
+            logging.error(f'Cache is empty...')
             return None
         return [Genre.parse_raw(item) for item in orjson.loads(data)]
 
@@ -80,6 +85,7 @@ class GenreService:
         try:
             doc = await self.elastic.get('genres', genre_id)
         except NotFoundError:
+            logging.error(f'Elastic not found error!')
             return None
         return SerializedGenre(**doc['_source'])
 
