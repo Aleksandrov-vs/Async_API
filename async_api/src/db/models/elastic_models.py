@@ -1,7 +1,7 @@
-from typing import Dict, List
+from typing import List
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class Person(BaseModel):
@@ -9,7 +9,7 @@ class Person(BaseModel):
     name: str
 
 
-class Genre(BaseModel):
+class SerializedGenre(BaseModel):
     id: UUID
     name: str
 
@@ -17,11 +17,29 @@ class Genre(BaseModel):
 class SerializedFilm(BaseModel):
     id: UUID
     imdb_rating: float
-    genre: List[Genre]
+    genre: List[SerializedGenre]
     title: str
     description: str | None
-    director: List[Person]
-    actors_names: List[str]
-    writers_names: List[str]
-    actors: List[Person]
-    writers: List[Person]
+    director: List[Person] | None
+    actors_names: List[str] | None
+    writers_names: List[str] | None
+    actors: List[Person] | None
+    writers: List[Person] | None
+
+
+class PersonFilms(BaseModel):
+    id: UUID
+    roles: List[str]
+    title: str
+
+
+class SerializedPerson(BaseModel):
+    id: UUID
+    full_name: str
+    films: List[PersonFilms]
+
+
+class SerializedPersonFilm(BaseModel):
+    id: UUID
+    title: str
+    imdb_rating: float

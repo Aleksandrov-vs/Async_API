@@ -25,10 +25,10 @@ class Film(BaseModel):
     title: str
     imdb_rating: float
     description: str | None
-    actors: List[Person]
-    writers:  List[Person]
-    directors:  List[Person]
-    genre: List[Genre]
+    actors: List[Person] | None
+    writers:  List[Person] | None
+    directors:  List[Person] | None
+    genre: List[Genre] | None
 
 
 class FilmSearch(BaseModel):

@@ -1,18 +1,13 @@
 from typing import List
-from uuid import UUID
 
 import orjson
 
 from db.models.elastic_models import SerializedFilm
-from .base import BaseOrjsonModel
+from .base import UUIDMixin
 
 
 def orjson_dumps(v, *, default):
     return orjson.dumps(v, default=default).decode()
-
-
-class UUIDMixin(BaseOrjsonModel):
-    uuid: UUID
 
 
 class Actor(UUIDMixin):
@@ -46,30 +41,42 @@ class ShortFilm(UUIDMixin):
 
 class DetailFilm(ShortFilm):
     description: str | None
-    actors: List[Actor]
-    writers: List[Writer]
-    directors: List[Director]
-    genre: List[Genre]
+    actors: List[Actor] | None
+    writers: List[Writer] | None
+    directors: List[Director] | None
+    genre: List[Genre] | None
 
     @classmethod
     def from_serialized_movie(cls, serialized_movie: SerializedFilm):
-        print(serialized_movie.genre)
-        actors = [
-            Actor(uuid=actor.id, full_name=actor.name)
-            for actor in serialized_movie.actors]
-        writers = [
-            Writer(uuid=writer.id, full_name=writer.name)
-            for writer in serialized_movie.writers
-        ]
-        directors = [
-            Director(uuid=director.id, full_name=director.name)
-            for director in serialized_movie.director
-        ]
-        print(serialized_movie.genre)
-        genre = [
-            Genre(uuid=g.id, name=g.name)
-            for g in serialized_movie.genre
-        ]
+        if serialized_movie.actors is None:
+            actors = None
+        else:
+            actors = [
+                Actor(uuid=actor.id, full_name=actor.name)
+                for actor in serialized_movie.actors]
+
+        if serialized_movie.writers is None:
+            writers = None
+        else:
+            writers = [
+                Writer(uuid=writer.id, full_name=writer.name)
+                for writer in serialized_movie.writers
+            ]
+
+        if serialized_movie.director is None:
+            directors = None
+        else:
+            directors = [
+                Director(uuid=director.id, full_name=director.name)
+                for director in serialized_movie.director
+            ]
+        if serialized_movie.genre is None:
+            genre = None
+        else:
+            genre = [
+                Genre(uuid=g.id, name=g.name)
+                for g in serialized_movie.genre
+            ]
         return cls(
             uuid=serialized_movie.id,
             title=serialized_movie.title,
