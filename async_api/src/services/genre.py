@@ -2,14 +2,17 @@ from functools import lru_cache
 from typing import List, Optional
 from uuid import UUID
 
-from elasticsearch import AsyncElasticsearch, NotFoundError
-from fastapi import Depends
-from redis.asyncio import Redis
-
+import orjson
 from db.elastic import get_elastic
 from db.models.elastic_models import SerializedGenre
 from db.redis import get_redis
+from elasticsearch import AsyncElasticsearch, NotFoundError
+from fastapi import Depends
 from models.genre import Genre
+from redis.asyncio import Redis
+from services.redis_utils import key_generate
+
+GENRE_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
 class GenreService:
@@ -24,13 +27,11 @@ class GenreService:
             genres = [Genre.from_serialized_genre(s_g) for s_g in ser_genre]
             if not genres:
                 return None
-            for genre in genres:
-                await self._put_genre_to_cache(genre)
-
+            await self._put_genres_to_cache(genres)
         return genres
 
     async def get_by_id(self, genre_id: UUID) -> Optional[Genre]:
-        genre = await self._genre_from_cache()
+        genre = await self._genre_from_cache(genre_id)
         if not genre:
             ser_genre = await self._get_genre_from_elastic(genre_id)
             if not ser_genre:
@@ -48,14 +49,30 @@ class GenreService:
         ]
         return all_genres
 
-    async def _genres_from_cache(self):
-        return None
+    async def _genre_from_cache(self, genre_id: str) -> Optional[Genre]:
+        key = await key_generate(genre_id)
+        data = await self.redis.get(key)
+        if not data:
+            return None
+        genre = Genre.parse_raw(data)
+        return genre
 
-    async def _put_genre_to_cache(self, genre):
-        return None
+    async def _genres_from_cache(self) -> Optional[List[Genre]]:
+        key = await key_generate(source='all_genres')
+        data = await self.redis.get(key)
+        if not data:
+            return None
+        return [Genre.parse_raw(item) for item in orjson.loads(data)]
 
-    async def _genre_from_cache(self):
-        return None
+    async def _put_genres_to_cache(self, genres: List[Genre]) -> None:
+        key = await key_generate(source='all_genres')
+        await self.redis.set(key, orjson.dumps([genre.json(by_alias=True) for genre in genres]),
+                             GENRE_CACHE_EXPIRE_IN_SECONDS)
+
+    async def _put_genre_to_cache(self, genre: Genre) -> None:
+        key = await key_generate(genre.uuid)
+        await self.redis.set(key, genre.json(),
+                             GENRE_CACHE_EXPIRE_IN_SECONDS)
 
     async def _get_genre_from_elastic(
             self, genre_id: UUID
