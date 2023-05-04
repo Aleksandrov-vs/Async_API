@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from services.film import FilmService, get_film_service
+from core.messages import FILM_NOT_FOUND, TOTAL_FILM_NOT_FOUND
 
 router = APIRouter()
 
@@ -61,7 +62,7 @@ async def film_search(
     films = await film_service.get_by_query(film_title, page_size, page_number)
     if not films:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
-                            detail='films not found')
+                            detail=TOTAL_FILM_NOT_FOUND)
     return [FilmSearch(**film.dict()) for film in films]
 
 
@@ -88,7 +89,7 @@ async def film_details(
     film = await film_service.get_by_id(film_id)
     if not film:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
-                            detail='film not found')
+                            detail=FILM_NOT_FOUND % ('film id', film_id))
     return Film(**film.dict())
 
 
@@ -112,7 +113,7 @@ async def films_sort(
         film_service: FilmService = Depends(get_film_service)) \
         -> List[FilmSearch]:
     """
-       Возвращает отсортированный список фильмов (с учетом пагинации):
+       Возвращает отсортированный список фильмов (с учетом пагинации и жанра):
        - **uuid**: id фильма
        - **title**: название фильма
        - **imdb_rating**: рейтинг фильма
@@ -122,5 +123,5 @@ async def films_sort(
                                            page_number, genre_id)
     if not films:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
-                            detail='film not found')
+                            detail=TOTAL_FILM_NOT_FOUND)
     return [FilmSearch(**film.dict()) for film in films]

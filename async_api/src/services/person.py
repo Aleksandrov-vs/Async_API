@@ -3,7 +3,7 @@ from functools import lru_cache
 from uuid import UUID
 
 import orjson
-from elasticsearch import AsyncElasticsearch, NotFoundError
+from elasticsearch import AsyncElasticsearch, NotFoundError, RequestError
 from fastapi import Depends
 from redis.asyncio import Redis
 
@@ -98,7 +98,7 @@ class PersonService:
     async def _search_person_from_elastic(
             self, person_name: str,
             page_size: int, page_number: int
-    ) -> list[SerializedPerson]:
+    ) -> list[SerializedPerson] | None:
         q = {
             "match": {
                 "full_name": {
@@ -116,6 +116,9 @@ class PersonService:
                 size=page_size
             )
         except NotFoundError:
+            logging.info(PERSON_NOT_FOUND_ES, 'person_name', person_name)
+            return None
+        except RequestError:
             logging.info(PERSON_NOT_FOUND_ES, 'person_name', person_name)
             return None
         return [
