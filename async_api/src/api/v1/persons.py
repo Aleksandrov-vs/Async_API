@@ -18,9 +18,17 @@ class PersonFilm(BaseModel):
 
 @router.get('/{person_id}/film/', response_model=List[PersonFilm])
 async def person_films(
-        person_id: UUID,
+        person_id: UUID = Query(
+            'a5a8f573-3cee-4ccc-8a2b-91cb9f55250a',
+            description='UUID персоны'
+        ),
         person_service: PersonService = Depends(get_person_service)
 ):
+    """
+       Возвращает список фильмов в создании которых приняла участие персона с переданным id:
+       - **uuid**: id фильма
+       - **name**: название фильма
+    """
     films = await person_service.get_person_films(person_id)
     if films is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
@@ -41,9 +49,18 @@ class ResponsePerson(BaseModel):
 
 @router.get('/{person_id}', response_model=ResponsePerson)
 async def detail_person(
-        person_id: UUID,
+        person_id: UUID = Query(
+            'a5a8f573-3cee-4ccc-8a2b-91cb9f55250a',
+            description='UUID персоны'
+        ),
         person_service: PersonService = Depends(get_person_service)
 ):
+    """
+       Возвращает детальную информацию о персоне по его id:
+       - **uuid**: id персоны
+       - **full_name**: полное имя персоны
+       - **films**: список фильмов в которых уччастовала персона (id фильма и роль)
+    """
     person = await person_service.get_by_id(person_id)
     if not person:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
@@ -53,7 +70,10 @@ async def detail_person(
 
 @router.get('/search/', response_model=List[ResponsePerson])
 async def search_person(
-        person_name: str,
+        person_name: str = Query(
+            'George Lucas',
+            description='Имя персоны для нечеткого поиска'
+        ),
         page_size: int = Query(
             50, gt=0, le=100,
             description="Количество записей на странице (от 1 до 100)."
@@ -63,6 +83,12 @@ async def search_person(
         ),
         person_service: PersonService = Depends(get_person_service)
 ):
+    """
+       Возвращает список персон с похожими именами (с учетом пагинации):
+       - **uuid**: id персоны
+       - **full_name**: полное имя персоны
+       - **films**: список фильмов в которых участовала персона (id фильма и роль)
+    """
     persons = await person_service.search_person(person_name,
                                                  page_size,
                                                  page_number)
