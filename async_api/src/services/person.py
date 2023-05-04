@@ -3,13 +3,19 @@ from functools import lru_cache
 from uuid import UUID
 
 import orjson
+from elasticsearch import AsyncElasticsearch, NotFoundError
+from fastapi import Depends
+from redis.asyncio import Redis
+
+from core.messages import (
+    PERSON_NOT_FOUND,
+    PERSON_NOT_FOUND_ES,
+    PERSON_CACHE_NOT_FOUND
+)
 from db.elastic import get_elastic
 from db.models.elastic_models import SerializedPerson, SerializedPersonFilm
 from db.redis import get_redis
-from elasticsearch import AsyncElasticsearch, NotFoundError
-from fastapi import Depends
 from models.person import Person, PersonFilms
-from redis.asyncio import Redis
 from services.redis_utils import key_generate
 
 PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 5
@@ -25,7 +31,7 @@ class PersonService:
         if not person:
             ser_person = await self._get_person_from_elastic(person_id)
             if not ser_person:
-                logging.info(f'Person {person_id} is not found!')
+                logging.info(PERSON_NOT_FOUND, 'person_id', person_id)
                 return None
             person = Person.from_serialized_genre(ser_person)
             await self._put_person_to_cache(person)
@@ -36,7 +42,7 @@ class PersonService:
         if not persons_film:
             ser_films = await self._get_person_films_from_elastic(person_id)
             if not ser_films:
-                logging.info(f'Person {person_id} is not found!')
+                logging.info(PERSON_NOT_FOUND, 'person_id', person_id)
                 return None
             persons_film = [
                 PersonFilms.from_serialized_genre(film)
@@ -53,7 +59,7 @@ class PersonService:
                                                              page_size,
                                                              page_number)
         if not ser_persons:
-            logging.info('Person is not found!')
+            logging.info(PERSON_NOT_FOUND, 'person_name', person_name)
             return None
         persons = [Person.from_serialized_genre(p) for p in ser_persons]
         return persons
@@ -64,7 +70,7 @@ class PersonService:
         try:
             doc = await self.elastic.get('persons', person_id)
         except NotFoundError:
-            logging.error(f'Elastic not found error!')
+            logging.info(PERSON_NOT_FOUND_ES, 'person_id', person_id)
             return None
         return SerializedPerson(**doc['_source'])
 
@@ -73,7 +79,7 @@ class PersonService:
     ) -> list[SerializedPersonFilm]:
         person_inf = await self._get_person_from_elastic(person_id)
         if person_inf is None:
-            logging.error(f'Elastic not found error!')
+            logging.info(PERSON_NOT_FOUND_ES, 'person_id', person_id)
             return None
         person_films_id = [f.id for f in person_inf.films]
         body = {
@@ -110,7 +116,7 @@ class PersonService:
                 size=page_size
             )
         except NotFoundError:
-            logging.error(f'Elastic not found error!')
+            logging.info(PERSON_NOT_FOUND_ES, 'person_name', person_name)
             return None
         return [
             SerializedPerson(**doc['_source'])
@@ -126,7 +132,7 @@ class PersonService:
         key = await key_generate(person_id)
         data = await self.redis.get(key)
         if not data:
-            logging.error(f'Cache is empty...')
+            logging.info(PERSON_CACHE_NOT_FOUND, 'person_id', person_id)
             return None
         person = Person.parse_raw(data)
         return person
@@ -135,7 +141,7 @@ class PersonService:
         key = await key_generate(person_id, source='person_films')
         data = await self.redis.get(key)
         if not data:
-            logging.error(f'Cache is empty...')
+            logging.info(PERSON_CACHE_NOT_FOUND, 'person_id', person_id)
             return None
         return [PersonFilms.parse_raw(item) for item in orjson.loads(data)]
 

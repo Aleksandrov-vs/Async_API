@@ -3,15 +3,20 @@ from functools import lru_cache
 from uuid import UUID
 
 import orjson
+from elasticsearch import AsyncElasticsearch, NotFoundError
+from fastapi import Depends
+from redis.asyncio import Redis
+
+from core.messages import (
+    FILM_NOT_FOUND,
+    FILM_NOT_FOUND_ES,
+    FILM_CACHE_NOT_FOUND
+)
 from db.elastic import get_elastic
 from db.models import elastic_models
 from db.redis import get_redis
-from elasticsearch import AsyncElasticsearch, NotFoundError
-from fastapi import Depends
 from models.film import DetailFilm, ShortFilm
-from redis.asyncio import Redis
 from services.redis_utils import key_generate
-
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 минут
 
@@ -26,7 +31,7 @@ class FilmService:
         if not film:
             film = await self._get_film_from_elastic(film_id)
             if not film:
-                logging.info(f'Film {film_id} is not found.')
+                logging.info(FILM_NOT_FOUND, 'id', film_id)
                 return None
             await self._put_film_to_cache(film)
         return film
@@ -40,7 +45,7 @@ class FilmService:
         if not films:
             films = await self._get_films_by_sort_from_elastic(sort, page_size, page_number, genre)
             if not films:
-                logging.info(f'Films with filter {sort} is not found.')
+                logging.info(FILM_NOT_FOUND, 'sort', sort)
                 return None
             await self._put_sort_films_to_cache(films, sort, page_size, page_number, genre)
         return films
@@ -51,7 +56,7 @@ class FilmService:
             page_number
         )
         if not films:
-            logging.info(f'Films with query {query} is not found.')
+            logging.info(FILM_NOT_FOUND, 'query', query)
             return None
         return films
 
@@ -68,7 +73,7 @@ class FilmService:
                 size=page_size
             )
         except NotFoundError:
-            logging.error(f'Elastic not found error!')
+            logging.error(FILM_NOT_FOUND_ES, 'query', query)
             return None
         films = list(map(
             lambda fl: ShortFilm(
@@ -84,7 +89,7 @@ class FilmService:
         try:
             doc = await self.elastic.get('movies', film_id)
         except NotFoundError:
-            logging.error(f'Elastic not found error!')
+            logging.error(FILM_NOT_FOUND_ES, 'id', film_id)
             return None
         genres = []
         for genre_name in doc['_source']['genre']:
@@ -121,7 +126,7 @@ class FilmService:
                 size=page_size
             )
         except NotFoundError:
-            logging.error(f'Elastic not found error!')
+            logging.error(FILM_NOT_FOUND_ES, 'sort', sort)
             return None
         films = list(map(
             lambda fl: ShortFilm(
@@ -137,7 +142,7 @@ class FilmService:
         key = await key_generate(film_id)
         data = await self.redis.get(key)
         if not data:
-            logging.error(f'Cache is empty...')
+            logging.info(FILM_CACHE_NOT_FOUND, 'film_id', film_id)
             return None
         film = DetailFilm.parse_raw(data)
         return film
@@ -151,7 +156,7 @@ class FilmService:
         key = await key_generate(sort, page_size, page_number, genre)
         data = await self.redis.get(key)
         if not data:
-            logging.error(f'Cache is empty...')
+            logging.info(FILM_CACHE_NOT_FOUND, 'sort', sort)
             return None
         return [ShortFilm.parse_raw(item) for item in orjson.loads(data)]
 
