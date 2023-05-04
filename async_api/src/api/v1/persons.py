@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from services.person import PersonService, get_person_service
+from core.messages import TOTAL_PERSON_NOT_FOUND, PERSON_NOT_FOUND, PERSONS_FILMS_NOT_FOUND
 
 router = APIRouter()
 
@@ -32,7 +33,7 @@ async def person_films(
     films = await person_service.get_person_films(person_id)
     if films is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
-                            detail='persons film not found')
+                            detail=PERSONS_FILMS_NOT_FOUND)
     return films
 
 
@@ -64,7 +65,7 @@ async def detail_person(
     person = await person_service.get_by_id(person_id)
     if not person:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
-                            detail='person not found')
+                            detail=PERSON_NOT_FOUND % ('person_id', person_id))
     return ResponsePerson(**person.dict())
 
 
@@ -94,5 +95,5 @@ async def search_person(
                                                  page_number)
     if not persons:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
-                            detail='person not found')
+                            detail=TOTAL_PERSON_NOT_FOUND)
     return [ResponsePerson(**p.dict())for p in persons]
