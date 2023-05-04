@@ -77,8 +77,11 @@ class GenreService:
 
     async def _put_genres_to_cache(self, genres: list[Genre]) -> None:
         key = await key_generate(source='all_genres')
-        await self.redis.set(key, orjson.dumps([genre.json(by_alias=True) for genre in genres]),
-                             GENRE_CACHE_EXPIRE_IN_SECONDS)
+        await self.redis.set(
+            key,
+            orjson.dumps([genre.json(by_alias=True) for genre in genres]),
+            GENRE_CACHE_EXPIRE_IN_SECONDS
+        )
 
     async def _put_genre_to_cache(self, genre: Genre) -> None:
         key = await key_generate(genre.uuid)

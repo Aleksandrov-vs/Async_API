@@ -36,21 +36,26 @@ class FilmService:
             await self._put_film_to_cache(film)
         return film
 
-    async def get_by_sort(self, sort: str, page_size: int,
-                          page_number: int, genre: UUID | None) -> list[ShortFilm] | None:
+    async def get_by_sort(
+            self, sort: str, page_size: int,
+            page_number: int, genre: UUID | None) -> list[ShortFilm] | None:
         films = await self._film_by_sort_from_cache(
             sort, page_size,
             page_number, genre
         )
         if not films:
-            films = await self._get_films_by_sort_from_elastic(sort, page_size, page_number, genre)
+            films = await self._get_films_by_sort_from_elastic(sort,
+                                                               page_size,
+                                                               page_number,
+                                                               genre)
             if not films:
                 logging.info(FILM_NOT_FOUND, 'sort', sort)
                 return None
             await self._put_sort_films_to_cache(films, sort, page_size, page_number, genre)
         return films
 
-    async def get_by_query(self, query: str, page_size: int, page_number: int) -> list[ShortFilm] | None:
+    async def get_by_query(self, query: str, page_size: int,
+                           page_number: int) -> list[ShortFilm] | None:
         films = await self._get_films_by_query_from_elastic(
             query, page_size,
             page_number
@@ -60,8 +65,9 @@ class FilmService:
             return None
         return films
 
-    async def _get_films_by_query_from_elastic(self, query: str, page_size: int,
-                                               page_number: int) -> list[ShortFilm] | None:
+    async def _get_films_by_query_from_elastic(
+            self, query: str,
+            page_size: int, page_number: int) -> list[ShortFilm] | None:
         q = {"match": {"title": {"query": query, "fuzziness": "AUTO"}}}
         try:
             doc = await self.elastic.search(
@@ -85,7 +91,8 @@ class FilmService:
         ))
         return films
 
-    async def _get_film_from_elastic(self, film_id: str) -> DetailFilm | None:
+    async def _get_film_from_elastic(self, film_id: str) \
+            -> DetailFilm | None:
         try:
             doc = await self.elastic.get('movies', film_id)
         except NotFoundError:

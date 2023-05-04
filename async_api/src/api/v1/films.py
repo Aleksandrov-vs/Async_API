@@ -39,7 +39,9 @@ class FilmSearch(BaseModel):
 
 @router.get('/search', response_model=List[FilmSearch])
 async def film_search(
-        film_title: str = Query('star', description="Название Кинопроизведения."),
+        film_title: str = Query(
+            'star',
+            description="Название Кинопроизведения."),
         page_size: int = Query(
             50, gt=0, le=100,
             description="Количество записей на странице (от 1 до 100)."
