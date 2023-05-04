@@ -1,6 +1,5 @@
 import logging
 from functools import lru_cache
-from typing import List, Optional
 from uuid import UUID
 
 import orjson
@@ -21,7 +20,7 @@ class PersonService:
         self.redis = redis
         self.elastic = elastic
 
-    async def get_by_id(self, person_id: UUID) -> Optional[Person]:
+    async def get_by_id(self, person_id: UUID) -> Person | None:
         person = await self._person_from_cache(person_id)
         if not person:
             ser_person = await self._get_person_from_elastic(person_id)
@@ -32,7 +31,7 @@ class PersonService:
             await self._put_person_to_cache(person)
         return person
 
-    async def get_person_films(self, person_id) -> Optional[List[PersonFilms]]:
+    async def get_person_films(self, person_id) -> list[PersonFilms] | None:
         persons_film = await self._person_films_from_cache(person_id)
         if not persons_film:
             ser_films = await self._get_person_films_from_elastic(person_id)
@@ -49,7 +48,7 @@ class PersonService:
     async def search_person(
             self, person_name: str,
             page_size: int, page_number: int
-    ) -> Optional[List[Person]]:
+    ) -> list[Person] | None:
         ser_persons = await self._search_person_from_elastic(person_name,
                                                              page_size,
                                                              page_number)
@@ -61,7 +60,7 @@ class PersonService:
 
     async def _get_person_from_elastic(
             self, person_id: UUID
-    ) -> Optional[SerializedPerson]:
+    ) -> SerializedPerson | None:
         try:
             doc = await self.elastic.get('persons', person_id)
         except NotFoundError:
@@ -71,7 +70,7 @@ class PersonService:
 
     async def _get_person_films_from_elastic(
             self, person_id: UUID
-    ) -> Optional[List[SerializedPersonFilm]]:
+    ) -> list[SerializedPersonFilm]:
         person_inf = await self._get_person_from_elastic(person_id)
         if person_inf is None:
             logging.error(f'Elastic not found error!')
@@ -93,8 +92,7 @@ class PersonService:
     async def _search_person_from_elastic(
             self, person_name: str,
             page_size: int, page_number: int
-    ) -> Optional[List[SerializedPerson]]:
-
+    ) -> list[SerializedPerson]:
         q = {
             "match": {
                 "full_name": {
@@ -119,12 +117,12 @@ class PersonService:
             for doc in doc['hits']['hits']
         ]
 
-    async def _put_person_to_cache(self, person: Person):
+    async def _put_person_to_cache(self, person: Person) -> None:
         key = await key_generate(person.uuid)
         await self.redis.set(key, person.json(),
                              PERSON_CACHE_EXPIRE_IN_SECONDS)
 
-    async def _person_from_cache(self, person_id: UUID) -> Optional[Person]:
+    async def _person_from_cache(self, person_id: UUID) -> Person | None:
         key = await key_generate(person_id)
         data = await self.redis.get(key)
         if not data:
@@ -133,7 +131,7 @@ class PersonService:
         person = Person.parse_raw(data)
         return person
 
-    async def _person_films_from_cache(self, person_id: UUID) -> Optional[PersonFilms]:
+    async def _person_films_from_cache(self, person_id: UUID) -> PersonFilms | None:
         key = await key_generate(person_id, source='person_films')
         data = await self.redis.get(key)
         if not data:
@@ -141,7 +139,7 @@ class PersonService:
             return None
         return [PersonFilms.parse_raw(item) for item in orjson.loads(data)]
 
-    async def _put_person_films_to_cache(self, person_id: UUID, person_films: List[PersonFilms]) -> None:
+    async def _put_person_films_to_cache(self, person_id: UUID, person_films: list[PersonFilms]) -> None:
         key = await key_generate(person_id, source='person_films')
         await self.redis.set(key, orjson.dumps([person_film.json(by_alias=True) for person_film in person_films]),
                              PERSON_CACHE_EXPIRE_IN_SECONDS)

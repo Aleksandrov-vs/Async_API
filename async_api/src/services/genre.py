@@ -1,6 +1,5 @@
 import logging
 from functools import lru_cache
-from typing import List, Optional
 from uuid import UUID
 
 import orjson
@@ -21,7 +20,7 @@ class GenreService:
         self.redis = redis
         self.elastic = elastic
 
-    async def get_all(self) -> Optional[List[Genre]]:
+    async def get_all(self) -> list[Genre]:
         genres = await self._genres_from_cache()
         if not genres:
             ser_genre = await self._get_genres_from_elastic()
@@ -32,7 +31,7 @@ class GenreService:
             await self._put_genres_to_cache(genres)
         return genres
 
-    async def get_by_id(self, genre_id: UUID) -> Optional[Genre]:
+    async def get_by_id(self, genre_id: UUID) -> Genre | None:
         genre = await self._genre_from_cache(genre_id)
         if not genre:
             ser_genre = await self._get_genre_from_elastic(genre_id)
@@ -43,7 +42,7 @@ class GenreService:
             await self._put_genre_to_cache(genre)
         return genre
 
-    async def _get_genres_from_elastic(self) -> List[SerializedGenre]:
+    async def _get_genres_from_elastic(self) -> list[SerializedGenre]:
         q = {'match_all': {}}
         _doc = await self.elastic.search(index='genres', body={'query': q})
         all_genres = [
@@ -52,7 +51,7 @@ class GenreService:
         ]
         return all_genres
 
-    async def _genre_from_cache(self, genre_id: UUID) -> Optional[Genre]:
+    async def _genre_from_cache(self, genre_id: UUID) -> Genre | None:
         key = await key_generate(genre_id)
         data = await self.redis.get(key)
         if not data:
@@ -61,7 +60,7 @@ class GenreService:
         genre = Genre.parse_raw(data)
         return genre
 
-    async def _genres_from_cache(self) -> Optional[List[Genre]]:
+    async def _genres_from_cache(self) -> list[Genre] | None:
         key = await key_generate(source='all_genres')
         data = await self.redis.get(key)
         if not data:
@@ -69,7 +68,7 @@ class GenreService:
             return None
         return [Genre.parse_raw(item) for item in orjson.loads(data)]
 
-    async def _put_genres_to_cache(self, genres: List[Genre]) -> None:
+    async def _put_genres_to_cache(self, genres: list[Genre]) -> None:
         key = await key_generate(source='all_genres')
         await self.redis.set(key, orjson.dumps([genre.json(by_alias=True) for genre in genres]),
                              GENRE_CACHE_EXPIRE_IN_SECONDS)
@@ -81,7 +80,7 @@ class GenreService:
 
     async def _get_genre_from_elastic(
             self, genre_id: UUID
-    ) -> Optional[SerializedGenre]:
+    ) -> SerializedGenre | None:
         try:
             doc = await self.elastic.get('genres', genre_id)
         except NotFoundError:

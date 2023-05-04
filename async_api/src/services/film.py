@@ -1,6 +1,5 @@
 import logging
 from functools import lru_cache
-from typing import List, Optional
 from uuid import UUID
 
 import orjson
@@ -13,6 +12,7 @@ from models.film import DetailFilm, ShortFilm
 from redis.asyncio import Redis
 from services.redis_utils import key_generate
 
+
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 минут
 
 
@@ -21,7 +21,7 @@ class FilmService:
         self.redis = redis
         self.elastic = elastic
 
-    async def get_by_id(self, film_id: str) -> Optional[DetailFilm]:
+    async def get_by_id(self, film_id: str) -> DetailFilm | None:
         film = await self._film_from_cache(film_id)
         if not film:
             film = await self._get_film_from_elastic(film_id)
@@ -31,11 +31,8 @@ class FilmService:
             await self._put_film_to_cache(film)
         return film
 
-    async def get_by_sort(
-            self, sort: str, page_size: int,
-            page_number: int, genre: UUID | None
-    ) -> Optional[List[ShortFilm]]:
-
+    async def get_by_sort(self, sort: str, page_size: int,
+                          page_number: int, genre: UUID | None) -> list[ShortFilm] | None:
         films = await self._film_by_sort_from_cache(
             sort, page_size,
             page_number, genre
@@ -48,7 +45,7 @@ class FilmService:
             await self._put_sort_films_to_cache(films, sort, page_size, page_number, genre)
         return films
 
-    async def get_by_query(self, query, page_size, page_number):
+    async def get_by_query(self, query: str, page_size: int, page_number: int) -> list[ShortFilm] | None:
         films = await self._get_films_by_query_from_elastic(
             query, page_size,
             page_number
@@ -58,10 +55,8 @@ class FilmService:
             return None
         return films
 
-    async def _get_films_by_query_from_elastic(
-            self, query: str,
-            page_size: int, page_number: int
-    ) -> Optional[List[ShortFilm]]:
+    async def _get_films_by_query_from_elastic(self, query: str, page_size: int,
+                                               page_number: int) -> list[ShortFilm] | None:
         q = {"match": {"title": {"query": query, "fuzziness": "AUTO"}}}
         try:
             doc = await self.elastic.search(
@@ -85,16 +80,12 @@ class FilmService:
         ))
         return films
 
-    async def _get_film_from_elastic(
-            self, film_id: str
-    ) -> Optional[DetailFilm]:
-
+    async def _get_film_from_elastic(self, film_id: str) -> DetailFilm | None:
         try:
             doc = await self.elastic.get('movies', film_id)
         except NotFoundError:
             logging.error(f'Elastic not found error!')
             return None
-
         genres = []
         for genre_name in doc['_source']['genre']:
             q = {'query': {'match_phrase': {'name': genre_name}}}
@@ -108,17 +99,14 @@ class FilmService:
         film = DetailFilm.from_serialized_movie(ser_film)
         return film
 
-    async def _get_films_by_sort_from_elastic(
-            self, sort: str, page_size: int,
-            page_number: int, genre_id: UUID | None
-    ) -> Optional[List[ShortFilm]]:
+    async def _get_films_by_sort_from_elastic(self, sort: str, page_size: int, page_number: int,
+                                              genre_id: UUID | None) -> list[ShortFilm] | None:
         if sort.startswith('-'):
             type_sort = 'desc'
             sort_value = sort[1:]
         else:
             type_sort = 'asc'
             sort_value = sort
-
         try:
             if genre_id:
                 genre_inf = await self.elastic.get('genres', genre_id)
@@ -126,7 +114,6 @@ class FilmService:
                 q = {'match': {'genre': genre_name}}
             else:
                 q = {"match_all": {}}
-
             doc = await self.elastic.search(
                 index='movies',
                 body={'query': q, 'sort': [{sort_value: type_sort}]},
@@ -146,7 +133,7 @@ class FilmService:
         ))
         return films
 
-    async def _film_from_cache(self, film_id: str) -> Optional[DetailFilm]:
+    async def _film_from_cache(self, film_id: str) -> DetailFilm | None:
         key = await key_generate(film_id)
         data = await self.redis.get(key)
         if not data:
@@ -157,8 +144,7 @@ class FilmService:
 
     async def _put_film_to_cache(self, film: DetailFilm) -> None:
         key = await key_generate(film.uuid)
-        await self.redis.set(key, film.json(),
-                             FILM_CACHE_EXPIRE_IN_SECONDS)
+        await self.redis.set(key, film.json(), FILM_CACHE_EXPIRE_IN_SECONDS)
 
     async def _film_by_sort_from_cache(self, sort: str, page_size: int,
                                        page_number: int, genre: UUID | None):
@@ -169,7 +155,7 @@ class FilmService:
             return None
         return [ShortFilm.parse_raw(item) for item in orjson.loads(data)]
 
-    async def _put_sort_films_to_cache(self, films: List[ShortFilm], sort: str, page_size: int,
+    async def _put_sort_films_to_cache(self, films: list[ShortFilm], sort: str, page_size: int,
                                        page_number: int, genre: UUID | None) -> None:
         key = await key_generate(sort, page_size, page_number, genre)
         await self.redis.set(key, orjson.dumps([film.json(by_alias=True) for film in films]),
