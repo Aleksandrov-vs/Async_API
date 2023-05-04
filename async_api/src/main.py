@@ -5,10 +5,8 @@ from fastapi.responses import ORJSONResponse
 from redis.asyncio import Redis
 
 from api.v1 import films, genres, persons
-from core.config import Settings
+from core.config import settings
 from db import elastic, redis
-
-settings = Settings()
 
 app = FastAPI(
     title=settings.project_name,
