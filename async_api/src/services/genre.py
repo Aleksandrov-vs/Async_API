@@ -3,10 +3,11 @@ from functools import lru_cache
 from uuid import UUID
 
 import orjson
-from elasticsearch import AsyncElasticsearch, NotFoundError
+from elasticsearch import  NotFoundError
 from fastapi import Depends
-from redis.asyncio import Redis
 
+from src.db.base import RedisBaseStorage, ElasticBaseStorage
+from src.services.base_serivce import BaseService
 from core.messages import (
     TOTAL_GENRES_NOT_FOUND,
     GENRE_NOT_FOUND,
@@ -22,10 +23,9 @@ from services.redis_utils import key_generate
 GENRE_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
-class GenreService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+class GenreService(BaseService):
+    def __init__(self, redis_storage: RedisBaseStorage, es_storage: ElasticBaseStorage):
+        super().__init__(redis_storage, es_storage)
 
     async def get_all(self) -> list[Genre]:
         genres = await self._genres_from_cache()
@@ -39,14 +39,19 @@ class GenreService:
         return genres
 
     async def get_by_id(self, genre_id: UUID) -> Genre | None:
-        genre = await self._genre_from_cache(genre_id)
+        genre = await self.get_data_from_redis(name_id='genre_id',
+                                               uuid=genre_id,
+                                               model=Genre)
         if not genre:
-            ser_genre = await self._get_genre_from_elastic(genre_id)
+            ser_genre = await self.get_data_from_elastic(index='genres',
+                                                         uuid=genre_id,
+                                                         model=Genre)
             if not ser_genre:
                 logging.info(GENRE_NOT_FOUND, 'genre_id', genre_id)
                 return None
             genre = Genre.from_serialized_genre(ser_genre)
-            await self._put_genre_to_cache(genre)
+            await self.put_data_to_redis(name_id='genre_id',
+                                         data=genre)
         return genre
 
     async def _get_genres_from_elastic(self) -> list[SerializedGenre]:

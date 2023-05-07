@@ -3,10 +3,11 @@ from functools import lru_cache
 from uuid import UUID
 
 import orjson
-from elasticsearch import AsyncElasticsearch, NotFoundError, RequestError
+from elasticsearch import NotFoundError, RequestError
 from fastapi import Depends
-from redis.asyncio import Redis
 
+from src.db.base import RedisBaseStorage, ElasticBaseStorage
+from src.services.base_serivce import BaseService
 from core.messages import (
     PERSON_NOT_FOUND,
     PERSON_NOT_FOUND_ES,
@@ -21,20 +22,24 @@ from services.redis_utils import key_generate
 PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
-class PersonService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+class PersonService(BaseService):
+    def __init__(self, redis_storage: RedisBaseStorage, es_storage: ElasticBaseStorage):
+        super().__init__(redis_storage, es_storage)
 
     async def get_by_id(self, person_id: UUID) -> Person | None:
-        person = await self._person_from_cache(person_id)
+        person = await self.get_data_from_redis(name_id='person_id',
+                                                uuid=person_id,
+                                                model=Person)
         if not person:
-            ser_person = await self._get_person_from_elastic(person_id)
+            ser_person = await self.get_data_from_elastic(index='persons',
+                                                          uuid=person_id,
+                                                          model=Person)
             if not ser_person:
                 logging.info(PERSON_NOT_FOUND, 'person_id', person_id)
                 return None
             person = Person.from_serialized_genre(ser_person)
-            await self._put_person_to_cache(person)
+            await self.put_data_to_redis(name_id='person_id',
+                                         data=person)
         return person
 
     async def get_person_films(self, person_id) -> list[PersonFilms] | None:
