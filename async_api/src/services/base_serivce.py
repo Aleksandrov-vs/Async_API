@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from db.base import RedisBaseStorage, ElasticBaseStorage
 
 
-class BaseService(abc.ABC):
+class Service(abc.ABC):
     @abc.abstractmethod
     def get_by_id(self, *args, **kwargs):
         """Получить данные по id"""
@@ -24,7 +24,7 @@ class BaseService(abc.ABC):
         """Получить данные из redis"""
 
 
-class Service(BaseService):
+class BaseService(Service):
     def __init__(
             self,
             redis_storage: RedisBaseStorage,
@@ -59,7 +59,7 @@ class Service(BaseService):
                                      uuid: str,
                                      model: BaseModel):
         try:
-            doc = await self.data_storage.get(index, uuid)
+            doc = await self.es_storage.get(index, uuid)
         except NotFoundError:
             return None
         return model(**doc['_source'])
@@ -68,7 +68,7 @@ class Service(BaseService):
                                    name_id: str,
                                    uuid: str,
                                    model: BaseModel):
-        cache_data = await self.cache.get(f'{name_id}:{uuid}')
+        cache_data = await self.redis_storage.get(f'{name_id}:{uuid}')
         if not cache_data:
             return None
 

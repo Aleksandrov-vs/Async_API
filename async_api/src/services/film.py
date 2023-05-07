@@ -3,10 +3,11 @@ from functools import lru_cache
 from uuid import UUID
 
 import orjson
-from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
-from redis.asyncio import Redis
+from elasticsearch import NotFoundError
 
+from src.db.base import RedisBaseStorage, ElasticBaseStorage
+from src.services.base_serivce import BaseService
 from core.messages import (
     FILM_NOT_FOUND,
     FILM_NOT_FOUND_ES,
@@ -21,8 +22,8 @@ from services.redis_utils import key_generate
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 минут
 
 
-class FilmService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
+class FilmService(BaseService):
+    def __init__(self, redis: RedisBaseStorage, elastic: ElasticBaseStorage):
         self.redis = redis
         self.elastic = elastic
 
@@ -176,7 +177,7 @@ class FilmService:
 
 @lru_cache()
 def get_film_service(
-        redis: Redis = Depends(get_redis),
-        elastic: AsyncElasticsearch = Depends(get_elastic),
+        redis: RedisBaseStorage = Depends(get_redis),
+        elastic: ElasticBaseStorage = Depends(get_elastic),
 ) -> FilmService:
     return FilmService(redis, elastic)

@@ -1,4 +1,3 @@
-from uuid import UUID
 from base import ElasticBaseStorage
 from elasticsearch import AsyncElasticsearch
 

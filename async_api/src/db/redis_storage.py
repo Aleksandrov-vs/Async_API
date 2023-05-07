@@ -27,6 +27,7 @@ class RedisStorage(RedisBaseStorage):
 
 redis: RedisBaseStorage | None = None
 
+
 # Функция понадобится при внедрении зависимостей
 async def get_redis() -> RedisBaseStorage:
     return redis
