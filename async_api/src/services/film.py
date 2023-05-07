@@ -23,23 +23,30 @@ FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 минут
 
 
 class FilmService(BaseService):
-    def __init__(self, redis: RedisBaseStorage, elastic: ElasticBaseStorage):
-        self.redis = redis
-        self.elastic = elastic
+    def __init__(self, redis_storage: RedisBaseStorage, es_storage: ElasticBaseStorage):
+        super().__init__(redis_storage, es_storage)
 
     async def get_by_id(self, film_id: str) -> DetailFilm | None:
-        film = await self._film_from_cache(film_id)
+        film = await self.get_data_from_redis(name_id='film_id',
+                                              uuid=film_id,
+                                              model=DetailFilm)
         if not film:
-            film = await self._get_film_from_elastic(film_id)
+            film = await self.get_data_from_elastic(index='movies',
+                                                    uuid=film_id,
+                                                    model=DetailFilm)
             if not film:
                 logging.info(FILM_NOT_FOUND, 'id', film_id)
                 return None
-            await self._put_film_to_cache(film)
+            await self.put_data_to_redis(name_id='film_id',
+                                         data=film)
         return film
 
-    async def get_by_sort(
-            self, sort: str, page_size: int,
-            page_number: int, genre: UUID | None) -> list[ShortFilm] | None:
+    async def get_by_sort(self,
+                          sort: str,
+                          page_size: int,
+                          page_number: int,
+                          genre: UUID | None
+    ) -> list[ShortFilm] | None:
         films = await self._film_by_sort_from_cache(
             sort, page_size,
             page_number, genre
@@ -154,10 +161,6 @@ class FilmService(BaseService):
             return None
         film = DetailFilm.parse_raw(data)
         return film
-
-    async def _put_film_to_cache(self, film: DetailFilm) -> None:
-        key = await key_generate(film.uuid)
-        await self.redis.set(key, film.json(), FILM_CACHE_EXPIRE_IN_SECONDS)
 
     async def _film_by_sort_from_cache(self, sort: str, page_size: int,
                                        page_number: int, genre: UUID | None):

@@ -4,6 +4,7 @@ from elasticsearch import NotFoundError
 from pydantic import BaseModel
 
 from db.base import RedisBaseStorage, ElasticBaseStorage
+from services.redis_utils import key_generate
 
 
 class Service(abc.ABC):
