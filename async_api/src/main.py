@@ -1,3 +1,4 @@
+from Async_API_sprint_1.async_api.src.db import elastic_storage
 from elasticsearch import AsyncElasticsearch
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
@@ -5,7 +6,7 @@ from redis.asyncio import Redis
 
 from api.v1 import films, genres, persons
 from core.config import settings
-from db import elastic, redis
+from Async_API_sprint_1.async_api.src.db import redis_storage
 
 app = FastAPI(
     title=settings.project_name,
@@ -17,16 +18,16 @@ app = FastAPI(
 
 @app.on_event('startup')
 async def startup():
-    redis.redis = Redis(host=settings.redis_host, port=settings.redis_port)
-    elastic.es = AsyncElasticsearch(
+    redis_storage.redis = Redis(host=settings.redis_host, port=settings.redis_port)
+    elastic_storage.es = AsyncElasticsearch(
         hosts=[f'{settings.elastic_host}:{settings.elastic_port}']
     )
 
 
 @app.on_event('shutdown')
 async def shutdown():
-    await redis.redis.close()
-    await elastic.es.close()
+    await redis_storage.redis.close()
+    await elastic_storage.es.close()
 
 
 # Подключаем роутер к серверу, указав префикс /v1/films

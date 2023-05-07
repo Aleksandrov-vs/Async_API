@@ -12,9 +12,9 @@ from core.messages import (
     PERSON_NOT_FOUND_ES,
     PERSON_CACHE_NOT_FOUND
 )
-from db.elastic import get_elastic
+from Async_API_sprint_1.async_api.src.db.elastic_storage import get_elastic
 from db.models.elastic_models import SerializedPerson, SerializedPersonFilm
-from db.redis import get_redis
+from Async_API_sprint_1.async_api.src.db.redis_storage import get_redis
 from models.person import Person, PersonFilms
 from services.redis_utils import key_generate
 

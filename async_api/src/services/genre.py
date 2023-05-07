@@ -13,9 +13,9 @@ from core.messages import (
     GENRE_CACHE_NOT_FOUND,
     TOTAL_GENRE_CACHE_NOT_FOUND
 )
-from db.elastic import get_elastic
+from Async_API_sprint_1.async_api.src.db.elastic_storage import get_elastic
 from db.models.elastic_models import SerializedGenre
-from db.redis import get_redis
+from Async_API_sprint_1.async_api.src.db.redis_storage import get_redis
 from models.genre import Genre
 from services.redis_utils import key_generate
 
@@ -58,6 +58,16 @@ class GenreService:
         ]
         return all_genres
 
+    async def _get_genre_from_elastic(
+            self, genre_id: UUID
+    ) -> SerializedGenre | None:
+        try:
+            doc = await self.elastic.get('genres', genre_id)
+        except NotFoundError:
+            logging.error(GENRE_CACHE_NOT_FOUND, 'genre_id', genre_id)
+            return None
+        return SerializedGenre(**doc['_source'])
+
     async def _genre_from_cache(self, genre_id: UUID) -> Genre | None:
         key = await key_generate(genre_id)
         data = await self.redis.get(key)
@@ -87,16 +97,6 @@ class GenreService:
         key = await key_generate(genre.uuid)
         await self.redis.set(key, genre.json(),
                              GENRE_CACHE_EXPIRE_IN_SECONDS)
-
-    async def _get_genre_from_elastic(
-            self, genre_id: UUID
-    ) -> SerializedGenre | None:
-        try:
-            doc = await self.elastic.get('genres', genre_id)
-        except NotFoundError:
-            logging.error(GENRE_CACHE_NOT_FOUND, 'genre_id', genre_id)
-            return None
-        return SerializedGenre(**doc['_source'])
 
 
 @lru_cache()
