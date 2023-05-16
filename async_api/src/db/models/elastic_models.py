@@ -17,7 +17,7 @@ class SerializedGenre(BaseModel):
 class SerializedFilm(BaseModel):
     id: UUID
     imdb_rating: float
-    genre: List[SerializedGenre]
+    genre: List[SerializedGenre] | List
     title: str
     description: str | None
     director: List[Person] | None

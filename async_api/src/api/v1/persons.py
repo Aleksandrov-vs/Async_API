@@ -30,7 +30,7 @@ async def person_films(
        - **uuid**: id фильма
        - **name**: название фильма
     """
-    films = await person_service.get_person_films(person_id)
+    films = await person_service.get_films_for_person(person_id)
     if films is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
                             detail=PERSONS_FILMS_NOT_FOUND)
