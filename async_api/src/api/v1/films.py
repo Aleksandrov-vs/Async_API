@@ -59,7 +59,7 @@ async def film_search(
       - **imdb_rating**: рейтинг фильма
     """
 
-    films = await film_service.get_by_query(film_title, page_size, page_number)
+    films = await film_service.get_by_title(film_title, page_size, page_number)
     if not films:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
                             detail=TOTAL_FILM_NOT_FOUND)
