@@ -3,6 +3,7 @@ from elasticsearch import AsyncElasticsearch
 from db.elastic import film, person
 from db.elastic import genre
 
+
 es: AsyncElasticsearch | None = None
 
 
