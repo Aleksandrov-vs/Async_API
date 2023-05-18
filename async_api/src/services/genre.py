@@ -1,107 +1,79 @@
 import logging
 from functools import lru_cache
 from uuid import UUID
+from typing import Protocol
 
-import orjson
-from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
-from redis.asyncio import Redis
 
+from db.elastic.genre import get_genre_repository
 from core.messages import (
     TOTAL_GENRES_NOT_FOUND,
     GENRE_NOT_FOUND,
-    GENRE_CACHE_NOT_FOUND,
-    TOTAL_GENRE_CACHE_NOT_FOUND
 )
-from db.elastic import get_elastic
-from db.models.elastic_models import SerializedGenre
-from db.redis import get_redis
+from db.redis.genre import get_genre_cache_repository
 from models.genre import Genre
-from services.redis_utils import key_generate
 
-GENRE_CACHE_EXPIRE_IN_SECONDS = 60 * 5
+
+class GenreCacheRepositoryProtocol(Protocol):
+    async def get_by_id(self, genre_id: UUID) -> Genre | None:
+        """возвращает описание жанра  из кеш по id"""
+        ...
+
+    async def get_all(self) -> list[Genre] | None:
+        """возвращает список всех жанров"""
+        ...
+
+    async def put_genres(self, genres: list[Genre]) -> None:
+        """добавить в кеш список жанров"""
+        ...
+
+    async def put_genre(self, genre: Genre) -> None:
+        """добавить в кеш жанр"""
+        ...
+
+
+class GenreRepositoryProtocol(Protocol):
+    async def get_by_id(self, genre_id: UUID) -> Genre | None:
+        """возврашает описание жанра по Id"""
+        ...
+
+    async def get_all_genres(self) -> list[Genre] | None:
+        """возвращает все жанры"""
+        ...
 
 
 class GenreService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+    def __init__(
+            self,
+            genre_cache_repository: GenreCacheRepositoryProtocol,
+            genre_repository: GenreRepositoryProtocol):
+        self._genre_cache_repository = genre_cache_repository
+        self._genre_repository = genre_repository
 
-    async def get_all(self) -> list[Genre]:
-        genres = await self._genres_from_cache()
+    async def get_all(self) -> list[Genre] | None:
+        genres = await self._genre_cache_repository.get_all()
         if not genres:
-            ser_genre = await self._get_genres_from_elastic()
-            genres = [Genre.from_serialized_genre(s_g) for s_g in ser_genre]
+            genres = await self._genre_repository.get_all_genres()
             if not genres:
                 logging.info(TOTAL_GENRES_NOT_FOUND)
                 return None
-            await self._put_genres_to_cache(genres)
+            await self._genre_cache_repository.put_genres(genres)
         return genres
 
     async def get_by_id(self, genre_id: UUID) -> Genre | None:
-        genre = await self._genre_from_cache(genre_id)
+        genre = await self._genre_cache_repository.get_by_id(genre_id=genre_id)
         if not genre:
-            ser_genre = await self._get_genre_from_elastic(genre_id)
-            if not ser_genre:
+            genre = await self._genre_repository.get_by_id(genre_id=genre_id)
+            if not genre:
                 logging.info(GENRE_NOT_FOUND, 'genre_id', genre_id)
                 return None
-            genre = Genre.from_serialized_genre(ser_genre)
-            await self._put_genre_to_cache(genre)
+            await self._genre_cache_repository.put_genre(genre)
         return genre
-
-    async def _get_genres_from_elastic(self) -> list[SerializedGenre]:
-        q = {'match_all': {}}
-        _doc = await self.elastic.search(index='genres', body={'query': q})
-        all_genres = [
-            SerializedGenre(**g['_source'])
-            for g in _doc['hits']['hits']
-        ]
-        return all_genres
-
-    async def _genre_from_cache(self, genre_id: UUID) -> Genre | None:
-        key = await key_generate(genre_id)
-        data = await self.redis.get(key)
-        if not data:
-            logging.info(GENRE_CACHE_NOT_FOUND, 'genre_id', genre_id)
-            return None
-        genre = Genre.parse_raw(data)
-        return genre
-
-    async def _genres_from_cache(self) -> list[Genre] | None:
-        key = await key_generate(source='all_genres')
-        data = await self.redis.get(key)
-        if not data:
-            logging.error(TOTAL_GENRE_CACHE_NOT_FOUND)
-            return None
-        return [Genre.parse_raw(item) for item in orjson.loads(data)]
-
-    async def _put_genres_to_cache(self, genres: list[Genre]) -> None:
-        key = await key_generate(source='all_genres')
-        await self.redis.set(
-            key,
-            orjson.dumps([genre.json(by_alias=True) for genre in genres]),
-            GENRE_CACHE_EXPIRE_IN_SECONDS
-        )
-
-    async def _put_genre_to_cache(self, genre: Genre) -> None:
-        key = await key_generate(genre.uuid)
-        await self.redis.set(key, genre.json(),
-                             GENRE_CACHE_EXPIRE_IN_SECONDS)
-
-    async def _get_genre_from_elastic(
-            self, genre_id: UUID
-    ) -> SerializedGenre | None:
-        try:
-            doc = await self.elastic.get('genres', genre_id)
-        except NotFoundError:
-            logging.error(GENRE_CACHE_NOT_FOUND, 'genre_id', genre_id)
-            return None
-        return SerializedGenre(**doc['_source'])
 
 
 @lru_cache()
 def get_genre_service(
-        redis: Redis = Depends(get_redis),
-        elastic: AsyncElasticsearch = Depends(get_elastic),
+        genre_cache_repository: GenreCacheRepositoryProtocol = Depends(get_genre_cache_repository),
+        genre_repository: GenreRepositoryProtocol = Depends(get_genre_repository)
 ) -> GenreService:
-    return GenreService(redis, elastic)
+    return GenreService(genre_cache_repository, genre_repository)

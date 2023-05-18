@@ -16,7 +16,7 @@ class Person(UUIDMixin):
     films: List[PersonRoleInFilm] | None
 
     @classmethod
-    def from_serialized_genre(cls, serialized_person: SerializedPerson):
+    def from_serialized_person(cls, serialized_person: SerializedPerson):
         return cls(
             uuid=serialized_person.id,
             full_name=serialized_person.full_name,
@@ -27,7 +27,7 @@ class Person(UUIDMixin):
         )
 
 
-class PersonFilms(UUIDMixin):
+class PersonFilm(UUIDMixin):
     title: str
     imdb_rating: str
 
