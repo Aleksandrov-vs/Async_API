@@ -1,7 +1,9 @@
 version: '3.8'
+
 services:
 
   fastapi_test:
+    container_name: fastapi_test
     build: ../../.
     image: fastapi-image
     env_file:
@@ -29,7 +31,8 @@ services:
       - .env
 
   tests:
-    image: fastapi-image
+    container_name: tests
+    build: .
     env_file:
       - .env
     entrypoint: >
