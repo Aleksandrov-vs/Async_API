@@ -2,7 +2,7 @@ from pydantic import BaseSettings, Field
 
 
 class TestSettings(BaseSettings):
-    es_host: str = Field('localhost', env='ELASTICSEARCH_HOST')
+    es_host: str = Field('http://127.0.0.1:9200', env='ELASTICSEARCH_HOST')
     es_port: int = Field(9200, env='ELASTICSEARCH_PORT')
     es_index: str = 'movies, genres, persons'
     es_id_field: str = Field('id')
