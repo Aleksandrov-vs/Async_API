@@ -11,12 +11,12 @@ services:
     depends_on:
       - elastic_test
       - redis_test
-    restart: always
-  
+    ports:
+      - ${FAST_API_PORT}:${FAST_API_PORT}
+
   elastic_test:
     container_name: elastic_test
     image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
-    restart: always
     env_file:
       - .env
     environment:

@@ -54,6 +54,7 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      - cluster.routing.allocation.disk.watermark.high=95%
     networks:
       - API
     expose:

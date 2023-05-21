@@ -15,17 +15,17 @@ pytestmark = pytest.mark.asyncio
     'query_data, expected_answer',
     [
         (
-                {'film_title': 'The Star'},
+                {'person_name': 'vasya'},
                 {'status': 200, 'length': 50}
         ),
     ]
 )
-async def test_film_search(
+async def test_person_search(
     make_get_request,
     query_data: dict,
     expected_answer: dict
 ):
-    url = test_settings.service_url + '/api/v1/films/search/'
+    url = test_settings.service_url + '/api/v1/persons/search/'
     body, status = await make_get_request(url, query_data)
 
     assert len(body) == expected_answer['length']

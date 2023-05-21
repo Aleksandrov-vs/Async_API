@@ -12,21 +12,19 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.mark.parametrize(
-    'query_data, expected_answer',
+    'expected_answer',
     [
         (
-                {'film_title': 'The Star'},
-                {'status': 200, 'length': 50}
+                {'status': 200, 'length': 10}
         ),
     ]
 )
-async def test_film_search(
+async def test_genre_search(
     make_get_request,
-    query_data: dict,
     expected_answer: dict
 ):
-    url = test_settings.service_url + '/api/v1/films/search/'
-    body, status = await make_get_request(url, query_data)
+    url = test_settings.service_url + '/api/v1/genres/'
+    body, status = await make_get_request(url)
 
     assert len(body) == expected_answer['length']
     assert status == expected_answer['status']
