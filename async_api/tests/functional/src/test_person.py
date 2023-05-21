@@ -15,8 +15,15 @@ pytestmark = pytest.mark.asyncio
     'query_data, expected_answer',
     [
         (
-                {'person_name': 'vasya'},
+                {'person_name': 'person'},
                 {'status': 200, 'length': 50}
+        ),
+        (
+                {
+                    'person_name': 'person',
+                    'page_size': 60,
+                },
+                {'status': 200, 'length': 60}
         ),
     ]
 )
