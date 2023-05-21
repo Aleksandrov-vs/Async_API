@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 
@@ -37,6 +38,5 @@ persons = [{
 genres = [{
     'id': str(uuid.uuid4()),
     'name': f'Genre_{val}'
-} for val in range(10)]
-print("жанрыЖ:", genres)
+} for val in range(60)]
 
