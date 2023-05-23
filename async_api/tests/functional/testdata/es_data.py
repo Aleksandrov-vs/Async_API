@@ -1,27 +1,32 @@
 import logging
 import uuid
-
+from random import choice, randint
+genres = [{
+    'id': str(uuid.uuid4()),
+    'name': f'Genre_{val}'
+} for val in range(10)]
+print("жанры:", genres)
 
 movies = [{
     'id': str(uuid.uuid4()),
     'imdb_rating': 8.5,
-    'genre': ['Action', 'Sci-Fi'],
+    'genre': [choice(genres)['name'] for _ in range(randint(1, 3))],
     'title': 'The Star',
     'description': 'New World',
     'director': [
-        {'id': '111', 'name': 'Ann'},
+        {'id': str(uuid.uuid4()), 'name': 'Ann'},
     ],
     'actors_names': ['Ann', 'Bob'],
     'writers_names': ['Ben', 'Howard'],
     'actors': [
-        {'id': '111', 'name': 'Ann'},
-        {'id': '222', 'name': 'Bob'}
+        {'id': str(uuid.uuid4()), 'name': 'Ann'},
+        {'id': str(uuid.uuid4()), 'name': 'Bob'}
     ],
     'writers': [
-        {'id': '333', 'name': 'Ben'},
-        {'id': '444', 'name': 'Howard'}
+        {'id': str(uuid.uuid4()), 'name': 'Ben'},
+        {'id': str(uuid.uuid4()), 'name': 'Howard'}
     ]
-} for _ in range(60)]
+} for i in range(60)]
 
 
 persons = [{
@@ -34,9 +39,3 @@ persons = [{
             'roles': [f'Film_{val}', ]},
     ],
 } for val in range(60)]
-
-genres = [{
-    'id': str(uuid.uuid4()),
-    'name': f'Genre_{val}'
-} for val in range(60)]
-
