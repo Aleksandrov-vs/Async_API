@@ -19,7 +19,7 @@ pytestmark = pytest.mark.asyncio
     'expected_answer',
     [
         (
-                {'status': HTTPStatus.OK, 'length': 60}
+                {'status': HTTPStatus.OK, 'length': 10}
         ),
     ]
 )

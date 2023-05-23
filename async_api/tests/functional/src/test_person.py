@@ -80,11 +80,11 @@ async def test_get_person_films_by_id(make_get_request, expected_answer: dict, q
     'query_data, expected_answer',
     [
         (
-                {'person_name': 'Vasya', 'page_size': 60},
+                {'person_name': 'Person', 'page_size': 60},
                 {'status': HTTPStatus.OK, 'length': 60}
         ),
         (
-                {'person_name': 'Vasya', 'page_size': -50},
+                {'person_name': 'Person', 'page_size': -50},
                 {'status': HTTPStatus.UNPROCESSABLE_ENTITY, 'length': 1}
         )
     ]
