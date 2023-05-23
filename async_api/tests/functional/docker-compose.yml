@@ -22,6 +22,8 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+    ports:
+      - ${ELASTICSEARCH_PORT}:${ELASTICSEARCH_PORT}
 
   redis_test:
     container_name: redis_test
@@ -29,6 +31,8 @@ services:
     restart: always
     env_file:
       - .env
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
 
   tests:
     container_name: tests
