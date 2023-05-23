@@ -32,7 +32,7 @@ class PersonFilm(UUIDMixin):
     imdb_rating: str
 
     @classmethod
-    def from_serialized_genre(
+    def from_serialized_person_film(
             cls,
             serialized_person_film: SerializedPersonFilm
     ):

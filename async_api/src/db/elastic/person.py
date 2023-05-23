@@ -73,7 +73,7 @@ class PersonElasticRepository(BaseElasticStorage):
         ser_film_for_person = [SerializedPersonFilm(**doc['_source']) for doc in docs['docs']]
 
         film_for_person = [
-            PersonFilm.from_serialized_genre(s_p) for s_p in ser_film_for_person
+            PersonFilm.from_serialized_person_film(s_p) for s_p in ser_film_for_person
         ]
         return film_for_person
 
