@@ -1,7 +1,5 @@
-import logging
 import uuid
 from random import choice, randint
-
 
 genres = [{
     'id': str(uuid.uuid4()),

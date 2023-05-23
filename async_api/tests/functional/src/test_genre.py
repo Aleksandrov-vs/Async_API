@@ -11,7 +11,6 @@ sys.path.append(parent)
 from settings import test_settings
 from functional.testdata.es_data import genres
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -24,8 +23,8 @@ pytestmark = pytest.mark.asyncio
     ]
 )
 async def test_get_all_genres(
-    make_get_request,
-    expected_answer: dict
+        make_get_request,
+        expected_answer: dict
 ):
     url = test_settings.service_url + '/api/v1/genres/'
     body, status = await make_get_request(url)
@@ -49,15 +48,15 @@ async def test_get_all_genres(
 
 
 @pytest.mark.parametrize(
-     'query_data, expected_answer',
+    'query_data, expected_answer',
     [
         (
-            {'genre': genres[0]},
-            {'status': HTTPStatus.OK}
+                {'genre': genres[0]},
+                {'status': HTTPStatus.OK}
         ),
         (
-            {'genre': genres[5]},
-            {'status': HTTPStatus.OK}
+                {'genre': genres[5]},
+                {'status': HTTPStatus.OK}
         ),
         (
                 {
@@ -71,9 +70,9 @@ async def test_get_all_genres(
     ]
 )
 async def test_get_genre_by_id(
-    make_get_request,
-    expected_answer: dict,
-    query_data: dict,
+        make_get_request,
+        expected_answer: dict,
+        query_data: dict,
 ):
     genre = query_data['genre']
     url = test_settings.service_url + f'/api/v1/genres/{genre["id"]}'

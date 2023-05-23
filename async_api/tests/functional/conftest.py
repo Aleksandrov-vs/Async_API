@@ -22,8 +22,8 @@ def event_loop():
 @pytest_asyncio.fixture(scope="session")
 async def es_client():
     client = AsyncElasticsearch(
-        hosts=f'{test_settings.es_host}:{test_settings.es_port}', 
-        validate_cert=False, 
+        hosts=f'{test_settings.es_host}:{test_settings.es_port}',
+        validate_cert=False,
         use_ssl=False)
     yield client
     await client.close()

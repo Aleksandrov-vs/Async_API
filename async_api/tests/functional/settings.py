@@ -1,6 +1,5 @@
-from pydantic import BaseSettings, Field
 from dotenv import load_dotenv
-
+from pydantic import BaseSettings, Field
 
 load_dotenv()
 
@@ -18,5 +17,6 @@ class TestSettings(BaseSettings):
     class Config:
         env_file = '.env'
         env_file_encoding = 'utf-8'
+
 
 test_settings = TestSettings()
