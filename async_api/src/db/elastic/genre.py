@@ -21,7 +21,8 @@ class GenreElasticRepository(BaseElasticStorage):
         body_of_q = {'query': {'match_all': {}}}
         _doc = await self._search(
             index='genres',
-            body_of_query=body_of_q
+            body_of_query=body_of_q,
+            size=1000
         )
         all_ser_genres = [
             SerializedGenre(**g['_source'])
@@ -31,7 +32,6 @@ class GenreElasticRepository(BaseElasticStorage):
             Genre.from_serialized_genre(g)
             for g in all_ser_genres
         ]
-
         return all_genre
 
 

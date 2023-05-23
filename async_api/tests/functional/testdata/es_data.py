@@ -1,3 +1,4 @@
+import logging
 import uuid
 from random import choice, randint
 genres = [{
@@ -30,7 +31,7 @@ movies = [{
 
 persons = [{
     'id': str(uuid.uuid4()),
-    'full_name': f"vasya {val}",
+    'full_name': "Person",
     'films': [
         {
             'id': str(uuid.uuid4()),

@@ -1,5 +1,5 @@
-import asyncio
-import aiohttp
+import logging
+
 import pytest
 import pytest_asyncio
 from elasticsearch import AsyncElasticsearch
@@ -27,7 +27,7 @@ def es_write_data(es_client: AsyncElasticsearch):
 @pytest_asyncio.fixture(scope='session')
 async def es_create_indexes(es_client: AsyncElasticsearch):
     async def inner():
-        print('создание индексов')
+        logging.info('creating indexes')
         await es_client.indices.delete(index='movies', ignore=[400, 404])
         await es_client.indices.create(
             index='movies',
@@ -45,15 +45,15 @@ async def es_create_indexes(es_client: AsyncElasticsearch):
             index='persons',
             body=INDEX_PERSONS,
         )
-        print('индексы созданы')
+        logging.info('indexes created')
     return inner
 
 
 @pytest_asyncio.fixture(scope='session', autouse=True)
 async def create_data(es_write_data,  es_create_indexes):
     await es_create_indexes()
-    print('создание данных')
+    logging.info('data recording')
     await es_write_data(es_data.movies, "movies")
     await es_write_data(es_data.persons, "persons")
     await es_write_data(es_data.genres, "genres")
-    print('данные загружены')
+    logging.info('data recorded')
