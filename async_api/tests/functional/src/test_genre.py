@@ -1,5 +1,7 @@
 import logging
 import os, sys
+from http import HTTPStatus
+
 import pytest
 
 current = os.path.dirname(os.path.realpath(__file__))
@@ -16,7 +18,7 @@ pytestmark = pytest.mark.asyncio
     'expected_answer',
     [
         (
-                {'status': 200, 'length': 60}
+                {'status': HTTPStatus.OK, 'length': 60}
         ),
     ]
 )
@@ -50,11 +52,11 @@ async def test_get_all_genres(
     [
         (
             {'genre': genres[0]},
-            {'status': 200}
+            {'status': HTTPStatus.OK}
         ),
         (
             {'genre': genres[5]},
-            {'status': 200}
+            {'status': HTTPStatus.OK}
         ),
         (
                 {
@@ -63,7 +65,7 @@ async def test_get_all_genres(
                         'name': "wer"
                     }
                 },
-                {'status': 422}
+                {'status': HTTPStatus.UNPROCESSABLE_ENTITY}
         )
     ]
 )
@@ -77,6 +79,6 @@ async def test_get_genre_by_id(
     body, status = await make_get_request(url)
     logging.info(status)
     assert status == expected_answer['status']
-    if status == 200:
+    if status == HTTPStatus.OK:
         assert genre['id'] == body['uuid']
         assert genre['name'] == body['name']
