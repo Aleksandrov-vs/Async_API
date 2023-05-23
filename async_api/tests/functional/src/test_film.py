@@ -9,6 +9,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 from settings import test_settings
 from functional.testdata.es_data import movies
+from http import HTTPStatus
 
 pytestmark = pytest.mark.asyncio
 
@@ -18,7 +19,7 @@ pytestmark = pytest.mark.asyncio
     [
         (
                 {'page_size': 60},
-                {'status': 200, 'length': 60}
+                {'status': HTTPStatus.OK, 'length': 60}
         )
     ]
 )
@@ -46,15 +47,15 @@ async def test_get_all_films(make_get_request, query_data: dict, expected_answer
     [
         (
                 {'film': movies[0]},
-                {'status': 200}
+                {'status': HTTPStatus.OK}
         ),
         (
                 {'film': movies[5]},
-                {'status': 200}
+                {'status': HTTPStatus.OK}
         ),
         (
                 {'film': {'id': "123", 'title': "NonExisting"}},
-                {'status': 404}
+                {'status': HTTPStatus.NOT_FOUND}
         )
     ]
 )
@@ -64,9 +65,9 @@ async def test_get_film_by_id(make_get_request, expected_answer: dict, query_dat
     body, status = await make_get_request(url)
     logging.info(status)
     assert status == expected_answer['status']
-    if status == 200:
+    if status == HTTPStatus.OK:
         assert film['id'] == body['uuid']
         assert film['title'] == body['title']
     cache_body, status = await make_get_request(url)
-    if status == 200:
+    if status == HTTPStatus.OK:
         assert cache_body == body
