@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+
+  fastapi_test:
+    container_name: fastapi_test
+    build: ../../.
+    image: fastapi-image
+    env_file:
+      - .env
+    depends_on:
+      - elastic_test
+      - redis_test
+    ports:
+      - ${FAST_API_PORT}:${FAST_API_PORT}
+
+  elastic_test:
+    container_name: elastic_test
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+    env_file:
+      - .env
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - ${ELASTICSEARCH_PORT}:${ELASTICSEARCH_PORT}
+
+  redis_test:
+    container_name: redis_test
+    image: redis:7-alpine
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+
+  tests:
+    container_name: tests
+    build: .
+    env_file:
+      - .env
+    entrypoint: >
+      sh -c "pip install -r /tests/functional/requirements.txt
+      && python3 /tests/functional/utils/wait_for_es.py
+      && python3 /tests/functional/utils/wait_for_redis.py
+      && pytest /tests/functional/src"

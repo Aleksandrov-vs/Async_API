@@ -1,5 +1,4 @@
 import logging
-from pprint import pprint
 from uuid import UUID
 from typing import List
 
@@ -43,7 +42,6 @@ class PersonElasticRepository(BaseElasticStorage):
         if doc is None:
             logging.info(PERSON_NOT_FOUND_ES, 'person_name', person_name)
             return None
-        pprint(doc)
         ser_person = [
             SerializedPerson(**p['_source'])
             for p in doc
