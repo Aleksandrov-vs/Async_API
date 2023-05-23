@@ -1,5 +1,5 @@
 import uuid
-
+from random import choice, randint
 
 movies = [{
     'id': str(uuid.uuid4()),
@@ -22,13 +22,12 @@ movies = [{
     ]
 } for _ in range(60)]
 
-
 persons = [{
     'id': str(uuid.uuid4()),
     'full_name': f"vasya {val}",
     'films': [
         {
-            'id': str(uuid.uuid4()),
+            'id': choice(movies)['id'],
             'title': f'Film_{val}',
             'roles': [f'Film_{val}', ]},
     ],
