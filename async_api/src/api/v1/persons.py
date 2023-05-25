@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from services.person import PersonService, get_person_service
 from core.messages import TOTAL_PERSON_NOT_FOUND, PERSON_NOT_FOUND, PERSONS_FILMS_NOT_FOUND
+from response_models import PersonFilm, ResponsePerson
 
 router = APIRouter()
 

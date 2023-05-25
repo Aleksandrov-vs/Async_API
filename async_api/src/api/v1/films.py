@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from services.film import FilmService, get_film_service
 from core.messages import FILM_NOT_FOUND, TOTAL_FILM_NOT_FOUND
+from response_models import FilmSearch, Film
 
 router = APIRouter()
 
