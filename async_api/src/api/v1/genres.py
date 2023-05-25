@@ -1,9 +1,7 @@
 from http import HTTPStatus
-from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 
 from services.genre import GenreService, get_genre_service
 from core.messages import GENRE_NOT_FOUND, TOTAL_GENRES_NOT_FOUND
@@ -11,7 +9,7 @@ from core.messages import GENRE_NOT_FOUND, TOTAL_GENRES_NOT_FOUND
 router = APIRouter()
 
 
-@router.get('/', response_model=List[ResponseGenre])
+@router.get('/', response_model=list[ResponseGenre])
 async def get_genres(genre_service: GenreService = Depends(get_genre_service)):
     """
        Возвращает список всех жанров одним списком:

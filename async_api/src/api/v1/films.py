@@ -9,7 +9,7 @@ from core.messages import FILM_NOT_FOUND, TOTAL_FILM_NOT_FOUND
 router = APIRouter()
 
 
-@router.get('/search', response_model=List[FilmSearch])
+@router.get('/search', response_model=list[FilmSearch])
 async def film_search(
         film_title: str = Query(
             'star',
@@ -22,7 +22,7 @@ async def film_search(
             1, gt=0, description="Номер страницы (начиная с 1)."
         ),
         film_service: FilmService = Depends(get_film_service)
-) -> List[FilmSearch]:
+) -> list[FilmSearch]:
     """
       возвращает список фильмов с похожим названием (с учетом пагинации):
       - **uuid**: id фильма
@@ -64,7 +64,7 @@ async def film_details(
     return Film(**film.dict())
 
 
-@router.get('/', response_model=List[FilmSearch])
+@router.get('/', response_model=list[FilmSearch])
 async def films_sort(
         sort: str = Query(
             '-imdb_rating', regex='^-imdb_rating$|^imdb_rating$',
@@ -82,7 +82,7 @@ async def films_sort(
             None, description="id Жанра"
         ),
         film_service: FilmService = Depends(get_film_service)) \
-        -> List[FilmSearch]:
+        -> list[FilmSearch]:
     """
        Возвращает отсортированный список фильмов (с учетом пагинации и жанра):
        - **uuid**: id фильма

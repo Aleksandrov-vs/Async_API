@@ -1,9 +1,7 @@
 from http import HTTPStatus
-from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 
 from services.person import PersonService, get_person_service
 from core.messages import TOTAL_PERSON_NOT_FOUND, PERSON_NOT_FOUND, PERSONS_FILMS_NOT_FOUND
@@ -11,7 +9,7 @@ from core.messages import TOTAL_PERSON_NOT_FOUND, PERSON_NOT_FOUND, PERSONS_FILM
 router = APIRouter()
 
 
-@router.get('/{person_id}/film/', response_model=List[PersonFilm])
+@router.get('/{person_id}/film/', response_model=list[PersonFilm])
 async def person_films(
         person_id: UUID = Query(
             'a5a8f573-3cee-4ccc-8a2b-91cb9f55250a',
@@ -29,17 +27,6 @@ async def person_films(
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
                             detail=PERSONS_FILMS_NOT_FOUND)
     return films
-
-
-class ResponsePersonRoles(BaseModel):
-    uuid: UUID
-    roles: List[str]
-
-
-class ResponsePerson(BaseModel):
-    uuid: UUID
-    full_name: str
-    films: List[ResponsePersonRoles]
 
 
 @router.get('/{person_id}', response_model=ResponsePerson)
@@ -63,7 +50,7 @@ async def detail_person(
     return ResponsePerson(**person.dict())
 
 
-@router.get('/search/', response_model=List[ResponsePerson])
+@router.get('/search/', response_model=list[ResponsePerson])
 async def search_person(
         person_name: str = Query(
             'George Lucas',
