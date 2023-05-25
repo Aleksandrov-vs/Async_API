@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from uuid import UUID
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -8,6 +9,29 @@ from core.messages import TOTAL_PERSON_NOT_FOUND, PERSON_NOT_FOUND, PERSONS_FILM
 from response_models import PersonFilm, ResponsePerson
 
 router = APIRouter()
+
+
+class PaginateQueryParams:
+    """Dependency class to parse pagination query params."""
+
+    def __init__(
+        self,
+        page_number: int = Query(
+            1,
+            title="Page number.",
+            description="Номер страницы (начиная с 1)",
+            gt=0,
+        ),
+        page_size: int = Query(
+            50,
+            title="Size of page.",
+            description="Количество записей на странице (от 1 до 100)",
+            gt=0,
+            le=100,
+        ),
+    ):
+        self.page_number = page_number
+        self.page_size = page_size
 
 
 @router.get('/{person_id}/film/', response_model=list[PersonFilm])
@@ -53,16 +77,10 @@ async def detail_person(
 
 @router.get('/search/', response_model=list[ResponsePerson])
 async def search_person(
+        pqp: Annotated[PaginateQueryParams, Depends()],
         person_name: str = Query(
             'George Lucas',
             description='Имя персоны для нечеткого поиска'
-        ),
-        page_size: int = Query(
-            50, gt=0, le=100,
-            description="Количество записей на странице (от 1 до 100)."
-        ),
-        page_number: int = Query(
-            1, gt=0, description="Номер страницы (начиная с 1)."
         ),
         person_service: PersonService = Depends(get_person_service)
 ):
@@ -73,8 +91,8 @@ async def search_person(
        - **films**: список фильмов в которых участовала персона (id фильма и роль)
     """
     persons = await person_service.search_person(person_name,
-                                                 page_size,
-                                                 page_number)
+                                                 pqp.page_size,
+                                                 pqp.page_number)
     if not persons:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
                             detail=TOTAL_PERSON_NOT_FOUND)
