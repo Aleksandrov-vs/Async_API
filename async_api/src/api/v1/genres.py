@@ -11,11 +11,6 @@ from core.messages import GENRE_NOT_FOUND, TOTAL_GENRES_NOT_FOUND
 router = APIRouter()
 
 
-class ResponseGenre(BaseModel):
-    uuid: UUID
-    name: str
-
-
 @router.get('/', response_model=List[ResponseGenre])
 async def get_genres(genre_service: GenreService = Depends(get_genre_service)):
     """

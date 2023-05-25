@@ -11,12 +11,6 @@ from core.messages import TOTAL_PERSON_NOT_FOUND, PERSON_NOT_FOUND, PERSONS_FILM
 router = APIRouter()
 
 
-class PersonFilm(BaseModel):
-    uuid: UUID
-    title: str
-    imdb_rating: float
-
-
 @router.get('/{person_id}/film/', response_model=List[PersonFilm])
 async def person_films(
         person_id: UUID = Query(

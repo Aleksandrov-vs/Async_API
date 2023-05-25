@@ -1,41 +1,12 @@
 from http import HTTPStatus
-from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 
 from services.film import FilmService, get_film_service
 from core.messages import FILM_NOT_FOUND, TOTAL_FILM_NOT_FOUND
 
 router = APIRouter()
-
-
-class Person(BaseModel):
-    uuid: UUID
-    full_name: str
-
-
-class Genre(BaseModel):
-    uuid: UUID
-    name: str
-
-
-class Film(BaseModel):
-    uuid: UUID
-    title: str
-    imdb_rating: float
-    description: str | None
-    actors: List[Person] | None
-    writers:  List[Person] | None
-    directors:  List[Person] | None
-    genre: List[Genre] | None
-
-
-class FilmSearch(BaseModel):
-    uuid: UUID
-    title: str
-    imdb_rating: float
 
 
 @router.get('/search', response_model=List[FilmSearch])
