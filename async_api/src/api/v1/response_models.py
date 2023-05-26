@@ -1,5 +1,5 @@
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, BaseConfig
 
 
 # Модели films.py
@@ -19,8 +19,8 @@ class Film(BaseModel):
     imdb_rating: float
     description: str | None
     actors: list[Person] | None
-    writers:  list[Person] | None
-    directors:  list[Person] | None
+    writers: list[Person] | None
+    directors: list[Person] | None
     genre: list[Genre] | None
 
 
@@ -28,6 +28,10 @@ class FilmSearch(BaseModel):
     uuid: UUID
     title: str
     imdb_rating: float
+
+    class Config:
+        BaseConfig.arbitrary_types_allowed = True
+        allow_population_by_field_name = True
 
 
 # Модель genres.py
