@@ -28,7 +28,7 @@ class PaginateQueryParams:
             description="Количество записей на странице (от 1 до 100)",
             gt=0,
             le=100,
-        ),
+        )
     ):
         self.page_number = page_number
         self.page_size = page_size
@@ -77,7 +77,7 @@ async def detail_person(
 
 @router.get('/search/', response_model=list[ResponsePerson])
 async def search_person(
-        pqp: Annotated[PaginateQueryParams, Depends()],
+        pqp: PaginateQueryParams = Depends(PaginateQueryParams),
         person_name: str = Query(
             'George Lucas',
             description='Имя персоны для нечеткого поиска'

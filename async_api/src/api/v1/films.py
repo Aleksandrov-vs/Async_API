@@ -36,7 +36,7 @@ class PaginateQueryParams:
 
 @router.get('/search', response_model=list[FilmSearch])
 async def film_search(
-        pqp: Annotated[PaginateQueryParams, Depends()],
+        pqp: PaginateQueryParams = Depends(PaginateQueryParams),
         film_title: str = Query(
             'star',
             description="Название Кинопроизведения."),
@@ -87,7 +87,7 @@ async def film_details(
 
 @router.get('/', response_model=list[FilmSearch])
 async def films_sort(
-        pqp: Annotated[PaginateQueryParams, Depends()],
+        pqp: PaginateQueryParams = Depends(PaginateQueryParams),
         sort: str = Query(
             '-imdb_rating', regex='^-imdb_rating$|^imdb_rating$',
             description="Сортировка в формате поле-порядок (-по убыванию, "
