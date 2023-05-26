@@ -29,10 +29,6 @@ class FilmSearch(BaseModel):
     title: str
     imdb_rating: float
 
-    class Config:
-        BaseConfig.arbitrary_types_allowed = True
-        allow_population_by_field_name = True
-
 
 # Модель genres.py
 class ResponseGenre(BaseModel):
