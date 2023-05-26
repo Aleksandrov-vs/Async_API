@@ -6,7 +6,7 @@ ENV PYTHONPATH=/opt/app/src
 COPY requirements.txt requirements.txt
 
 RUN  pip install --upgrade pip \
-     && pip install -r requirements.txt
+     && pip install -r requirements.txt --no-cache-dir
 
 COPY . .
 

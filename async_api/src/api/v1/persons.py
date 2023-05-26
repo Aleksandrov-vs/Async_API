@@ -1,23 +1,40 @@
 from http import HTTPStatus
-from typing import List
 from uuid import UUID
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 
 from services.person import PersonService, get_person_service
 from core.messages import TOTAL_PERSON_NOT_FOUND, PERSON_NOT_FOUND, PERSONS_FILMS_NOT_FOUND
+from .response_models import PersonFilm, ResponsePerson
 
 router = APIRouter()
 
 
-class PersonFilm(BaseModel):
-    uuid: UUID
-    title: str
-    imdb_rating: float
+class PaginateQueryParams:
+    """Dependency class to parse pagination query params."""
+
+    def __init__(
+        self,
+        page_number: int = Query(
+            1,
+            title="Page number.",
+            description="Номер страницы (начиная с 1)",
+            gt=0,
+        ),
+        page_size: int = Query(
+            50,
+            title="Size of page.",
+            description="Количество записей на странице (от 1 до 100)",
+            gt=0,
+            le=100,
+        )
+    ):
+        self.page_number = page_number
+        self.page_size = page_size
 
 
-@router.get('/{person_id}/film/', response_model=List[PersonFilm])
+@router.get('/{person_id}/film/', response_model=list[PersonFilm])
 async def person_films(
         person_id: UUID = Query(
             'a5a8f573-3cee-4ccc-8a2b-91cb9f55250a',
@@ -35,17 +52,6 @@ async def person_films(
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
                             detail=PERSONS_FILMS_NOT_FOUND)
     return films
-
-
-class ResponsePersonRoles(BaseModel):
-    uuid: UUID
-    roles: List[str]
-
-
-class ResponsePerson(BaseModel):
-    uuid: UUID
-    full_name: str
-    films: List[ResponsePersonRoles]
 
 
 @router.get('/{person_id}', response_model=ResponsePerson)
@@ -69,18 +75,12 @@ async def detail_person(
     return ResponsePerson(**person.dict())
 
 
-@router.get('/search/', response_model=List[ResponsePerson])
+@router.get('/search/', response_model=list[ResponsePerson])
 async def search_person(
+        pqp: PaginateQueryParams = Depends(PaginateQueryParams),
         person_name: str = Query(
             'George Lucas',
             description='Имя персоны для нечеткого поиска'
-        ),
-        page_size: int = Query(
-            50, gt=0, le=100,
-            description="Количество записей на странице (от 1 до 100)."
-        ),
-        page_number: int = Query(
-            1, gt=0, description="Номер страницы (начиная с 1)."
         ),
         person_service: PersonService = Depends(get_person_service)
 ):
@@ -91,8 +91,8 @@ async def search_person(
        - **films**: список фильмов в которых участовала персона (id фильма и роль)
     """
     persons = await person_service.search_person(person_name,
-                                                 page_size,
-                                                 page_number)
+                                                 pqp.page_size,
+                                                 pqp.page_number)
     if not persons:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
                             detail=TOTAL_PERSON_NOT_FOUND)

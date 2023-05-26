@@ -1,7 +1,8 @@
-import logging
 import os
 import sys
 import uuid
+import logging
+from http import HTTPStatus
 
 import pytest
 
@@ -10,7 +11,6 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 from settings import test_settings
 from functional.testdata.es_data import persons
-from http import HTTPStatus
 
 pytestmark = pytest.mark.asyncio
 
@@ -37,11 +37,15 @@ async def test_get_person_by_id(make_get_request, expected_answer: dict, query_d
     url = test_settings.service_url + f'/api/v1/persons/{person["id"]}'
     body, status = await make_get_request(url)
     logging.info(status)
+
     assert status == expected_answer['status']
+
     if status == HTTPStatus.OK:
         assert person['id'] == body['uuid']
         assert person['full_name'] == body['full_name']
+
     cache_body, status = await make_get_request(url)
+
     if status == HTTPStatus.OK:
         assert cache_body == body
 
@@ -68,10 +72,14 @@ async def test_get_person_films_by_id(make_get_request, expected_answer: dict, q
     url = test_settings.service_url + f'/api/v1/persons/{person["id"]}/film'
     body, status = await make_get_request(url)
     logging.info(status)
+
     assert status == expected_answer['status']
+
     if status == HTTPStatus.OK:
         assert person['films'][0]['id'] == body[0]['uuid']
+
     cache_body, status = await make_get_request(url)
+
     if status == HTTPStatus.OK:
         assert cache_body == body
 
@@ -92,10 +100,14 @@ async def test_get_person_films_by_id(make_get_request, expected_answer: dict, q
 async def test_search_all_person(make_get_request, query_data: dict, expected_answer: dict):
     url = test_settings.service_url + '/api/v1/persons/search/'
     body, status = await make_get_request(url, query_data)
+    logging.info(status)
+
     assert status == expected_answer['status']
+
     if status == expected_answer['status']:
         assert len(body) == expected_answer['length'], \
             'The number of retrieved films does not match the expected length'
+
         if len(body) == HTTPStatus.OK:
             for person in persons:
                 response_person = list(
@@ -103,6 +115,7 @@ async def test_search_all_person(make_get_request, query_data: dict, expected_an
                         lambda person_r: person_r['uuid'] == person['id'],
                         body
                     ))
+
                 assert len(response_person) == 1, 'Multiple records with the same ID were returned or some ' \
                                                   'data is missing in the response body'
                 assert response_person[0]['uuid'] == person['id']

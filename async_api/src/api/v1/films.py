@@ -1,57 +1,47 @@
 from http import HTTPStatus
-from typing import List
 from uuid import UUID
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 
 from services.film import FilmService, get_film_service
 from core.messages import FILM_NOT_FOUND, TOTAL_FILM_NOT_FOUND
+from .response_models import FilmSearch, Film
 
 router = APIRouter()
 
 
-class Person(BaseModel):
-    uuid: UUID
-    full_name: str
+class PaginateQueryParams:
+    """Dependency class to parse pagination query params."""
+
+    def __init__(
+        self,
+        page_number: int = Query(
+            1,
+            title="Page number.",
+            description="Номер страницы (начиная с 1)",
+            gt=0,
+        ),
+        page_size: int = Query(
+            50,
+            title="Size of page.",
+            description="Количество записей на странице (от 1 до 100)",
+            gt=0,
+            le=100,
+        ),
+    ):
+        self.page_number = page_number
+        self.page_size = page_size
 
 
-class Genre(BaseModel):
-    uuid: UUID
-    name: str
-
-
-class Film(BaseModel):
-    uuid: UUID
-    title: str
-    imdb_rating: float
-    description: str | None
-    actors: List[Person] | None
-    writers:  List[Person] | None
-    directors:  List[Person] | None
-    genre: List[Genre] | None
-
-
-class FilmSearch(BaseModel):
-    uuid: UUID
-    title: str
-    imdb_rating: float
-
-
-@router.get('/search', response_model=List[FilmSearch])
+@router.get('/search', response_model=list[FilmSearch])
 async def film_search(
+        pqp: PaginateQueryParams = Depends(PaginateQueryParams),
         film_title: str = Query(
             'star',
             description="Название Кинопроизведения."),
-        page_size: int = Query(
-            50, gt=0, le=100,
-            description="Количество записей на странице (от 1 до 100)."
-        ),
-        page_number: int = Query(
-            1, gt=0, description="Номер страницы (начиная с 1)."
-        ),
         film_service: FilmService = Depends(get_film_service)
-) -> List[FilmSearch]:
+) -> list[FilmSearch]:
     """
       возвращает список фильмов с похожим названием (с учетом пагинации):
       - **uuid**: id фильма
@@ -59,7 +49,9 @@ async def film_search(
       - **imdb_rating**: рейтинг фильма
     """
 
-    films = await film_service.get_by_title(film_title, page_size, page_number)
+    films = await film_service.get_by_title(film_title,
+                                            pqp.page_size, 
+                                            pqp.page_number)
     if not films:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
                             detail=TOTAL_FILM_NOT_FOUND)
@@ -93,25 +85,19 @@ async def film_details(
     return Film(**film.dict())
 
 
-@router.get('/', response_model=List[FilmSearch])
+@router.get('/', response_model=list[FilmSearch])
 async def films_sort(
+        pqp: PaginateQueryParams = Depends(PaginateQueryParams),
         sort: str = Query(
             '-imdb_rating', regex='^-imdb_rating$|^imdb_rating$',
             description="Сортировка в формате поле-порядок (-по убыванию, "
                         "без знака - по возрастанию)."
         ),
-        page_size: int = Query(
-            50, gt=0, le=100,
-            description="Количество записей на странице (от 1 до 100)."
-        ),
-        page_number: int = Query(
-            1, gt=0, description="Номер страницы (начиная с 1)."
-        ),
         genre_id: UUID | None = Query(
             None, description="id Жанра"
         ),
         film_service: FilmService = Depends(get_film_service)) \
-        -> List[FilmSearch]:
+        -> list[FilmSearch]:
     """
        Возвращает отсортированный список фильмов (с учетом пагинации и жанра):
        - **uuid**: id фильма
@@ -119,8 +105,10 @@ async def films_sort(
        - **imdb_rating**: рейтинг фильма
     """
 
-    films = await film_service.get_by_sort(sort, page_size,
-                                           page_number, genre_id)
+    films = await film_service.get_by_sort(sort,
+                                           pqp.page_size,
+                                           pqp.page_number,
+                                           genre_id)
     if not films:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND,
                             detail=TOTAL_FILM_NOT_FOUND)

@@ -1,6 +1,6 @@
-import logging
 import os
 import sys
+import logging
 from http import HTTPStatus
 
 import pytest
@@ -28,6 +28,7 @@ async def test_get_all_genres(
 ):
     url = test_settings.service_url + '/api/v1/genres/'
     body, status = await make_get_request(url)
+    logging.info(status)
 
     assert len(body) == expected_answer['length'], 'количество записанных и ' \
                                                    'полученных данных не совпадает'
@@ -40,6 +41,7 @@ async def test_get_all_genres(
                     lambda genre_r: genre_r['uuid'] == genre['id'],
                     body
                 ))
+
             assert len(response_genre) == 1, 'вернулось несколько записей' \
                                              ' с одинаковыми id или часть ' \
                                              'данных нет в теле запроса'
@@ -78,7 +80,9 @@ async def test_get_genre_by_id(
     url = test_settings.service_url + f'/api/v1/genres/{genre["id"]}'
     body, status = await make_get_request(url)
     logging.info(status)
+
     assert status == expected_answer['status']
+
     if status == HTTPStatus.OK:
         assert genre['id'] == body['uuid']
         assert genre['name'] == body['name']
