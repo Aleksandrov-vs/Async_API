@@ -1,6 +1,5 @@
 from uuid import UUID
-from pydantic import BaseModel, BaseConfig
-
+from pydantic import BaseModel
 
 # Модели films.py
 class Person(BaseModel):

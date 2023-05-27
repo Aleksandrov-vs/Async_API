@@ -1,37 +1,14 @@
 from http import HTTPStatus
 from uuid import UUID
-from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from services.film import FilmService, get_film_service
 from core.messages import FILM_NOT_FOUND, TOTAL_FILM_NOT_FOUND
 from .response_models import FilmSearch, Film
+from .utils import PaginateQueryParams
 
 router = APIRouter()
-
-
-class PaginateQueryParams:
-    """Dependency class to parse pagination query params."""
-
-    def __init__(
-        self,
-        page_number: int = Query(
-            1,
-            title="Page number.",
-            description="Номер страницы (начиная с 1)",
-            gt=0,
-        ),
-        page_size: int = Query(
-            50,
-            title="Size of page.",
-            description="Количество записей на странице (от 1 до 100)",
-            gt=0,
-            le=100,
-        ),
-    ):
-        self.page_number = page_number
-        self.page_size = page_size
 
 
 @router.get('/search', response_model=list[FilmSearch])
